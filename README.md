@@ -11,16 +11,16 @@ The workflow couples PLAXIS calculations with Python-based model generation, res
 Figures are organised in folders corresponding to the respective thesis chapters and studies.
 
 ```text
+├── README.md           - Repository overview and documentation
+├── LICENSE             - MIT License
+├── requirements.txt    - Python dependencies
+├── code/               - Python scripts for modelling, evaluation, optimisation and plotting
 ├── chap4_pro/          - Figures for Chapter 4
 ├── chap5_sen_base/     - Figures for the base-model sensitivity studies
 ├── chap5_sen_simpl/    - Figures for the simplified-model sensitivity studies
 ├── chap6_opt_studies0/ - Figures for optimisation study group 0
 ├── chap6_opt_studies1/ - Figures for optimisation study group 1
-├── chap6_opt_studies2/ - Figures for optimisation study group 2
-├── code/               - Python scripts for modelling, evaluation, optimisation and plotting
-├── LICENSE             - MIT License
-├── README.md           - Repository overview and documentation
-└── requirements.txt    - Python dependencies
+└── chap6_opt_studies2/ - Figures for optimisation study group 2
 ```
 
 ## Code organisation
