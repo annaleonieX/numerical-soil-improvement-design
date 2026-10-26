@@ -6,6 +6,7 @@ pandas
 matplotlib
 scipy
 pymoo>=0.6
+plxscripting
 
 # PLAXIS and its compatible scripting interface must be configured separately.
 # Project-local plaxis_*.py modules are not PyPI dependencies.
