@@ -8,14 +8,44 @@ The workflow couples PLAXIS calculations with Python-based model generation, res
 
 ## Structure
 
-| Path | Contents |
-| --- | --- |
-| `code/` | Python scripts for modelling, evaluation, optimisation and plotting |
-| `graphics/` | Selected figures and output plots |
-| `requirements.txt` | Identified third-party Python dependencies |
-| `LICENSE` | MIT License |
+Figures are organised in folders corresponding to the respective thesis chapters and studies.
 
-**Status:** This initial repository contains the documentation and folder structure. The final code and figures will be added separately.
+```text
+├── chap4_pro/          - Figures for Chapter 4
+├── chap5_sen_base/     - Figures for the base-model sensitivity studies
+├── chap5_sen_simpl/    - Figures for the simplified-model sensitivity studies
+├── chap6_opt_studies0/ - Figures for optimisation study group 0
+├── chap6_opt_studies1/ - Figures for optimisation study group 1
+├── chap6_opt_studies2/ - Figures for optimisation study group 2
+├── code/               - Python scripts for modelling, evaluation, optimisation and plotting
+├── LICENSE             - MIT License
+├── README.md           - Repository overview and documentation
+└── requirements.txt    - Python dependencies
+```
+
+## Code organisation
+
+The framework is organised into modules for workflow control, model generation, result evaluation, plotting and optimisation. The internal functions and their interactions are described in greater detail in the accompanying master's thesis.
+
+```text
+code/
+└── plaxis_00calling_01main.py          - Main workflow configuration and execution
+    ├── plaxis_00calling_02helpers.py  - Shared utilities and workflow support
+    ├── plaxis_01model_01main.py       - PLAXIS model generation and calculation
+    │   ├── plaxis_01model_02helpers.py   - Supporting model-generation functions
+    │   └── plaxis_01model_03refstudy.py  - Reference-study configurations
+    ├── plaxis_02eval_01main.py        - Result extraction and evaluation
+    │   ├── plaxis_02eval_02helpers.py    - Supporting evaluation functions
+    │   └── plaxis_02eval_03plotter.py    - Plots of numerical results
+    ├── plaxis_03plot_01main.py        - Comparative plots and parameter studies
+    │   └── plaxis_03plot_02helpers.py    - Plotting, formatting and labelling utilities
+    └── plaxis_04optimization_00calling.py - Optimisation-study configuration
+        ├── plaxis_04optimization_01main.py    - Optimisation and candidate evaluation
+        ├── plaxis_04optimization_02helpers.py - Method parameters and material costs
+        └── plaxis_04optimization_03plots.py   - Optimisation results and convergence plots
+```
+
+The hierarchy illustrates the functional organisation of the modules. All Python files are stored directly in `code/`.
 
 ## Setup
 
