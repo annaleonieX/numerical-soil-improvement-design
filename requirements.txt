@@ -1,0 +1,11 @@
+# Provisional direct dependencies identified in the available source files.
+# Complete model/evaluation/calling modules still require an import audit.
+# Versions other than the documented pymoo minimum are not yet verified.
+numpy
+pandas
+matplotlib
+scipy
+pymoo>=0.6
+
+# PLAXIS and its compatible scripting interface must be configured separately.
+# Project-local plaxis_*.py modules are not PyPI dependencies.
