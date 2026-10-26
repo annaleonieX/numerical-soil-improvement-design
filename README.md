@@ -79,7 +79,7 @@ Before running the released scripts, configure the local PLAXIS connection, proj
 
 ## Dependencies
 
-`numpy`, `pandas`, `matplotlib`, `scipy` and `pymoo` — see `requirements.txt`.
+`numpy`, `pandas`, `matplotlib`, `scipy`, `pymoo` and `plxscripting` — see `requirements.txt`.
 
 This provisional list is based on the available optimisation and plotting modules, including imports inside functions. The optimisation source specifies `pymoo >= 0.6`. Other package versions have not been verified against a complete working environment and are therefore not pinned.
 
