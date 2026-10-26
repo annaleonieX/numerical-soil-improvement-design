@@ -709,10 +709,14 @@ def plot_methodRanges(data,
                       properties,
                       unit_map=unit_map,
                       savePath=None):
-    methods = list(data.keys())
+    # Exclude study/material variants, e.g. VR_Nguyen or VR_quarry.
+    methods = [m for m in data if "_" not in str(m)]
+    if not methods:
+        return None
     _, cmap = fct_setPlotstyle(flat=True, r=1, colorMap=True)
     fig, axes = plt.subplots(1, len(properties),
-                             figsize=(max(8, 3.2*len(properties)), max(3, 0.42*len(methods)+1.6)),
+                             figsize=(15 / 2.54,
+                                      4 / 2.54),
                              sharey=True) #  same y axis
     if len(properties) == 1: axes = [axes]
     method_names = {m: format_methodLabel(m) for m in methods}
@@ -802,7 +806,7 @@ def plot_methodRanges(data,
     return filename
 
 if __name__ == "__main__":
-    device = 0
+    device = 27
     _, _, path = open_plaxisData(device, 'opt', 'opti_methodRanges')
     plot_methodRanges(get_buildingData('limits'),
                       ['diameter','ltp','stiffness'],

@@ -29,15 +29,15 @@ from plaxis_04optimization_02helpers import (get_buildingData,
 #-------------------------------- USER-INPUT ----------------------------------
 ###############################################################################
 
-LABELS = dict(si_R           = "SI radius $r$ [m]",
+LABELS = dict(si_R           = r"SI radius $r_{\mathrm{SI}}$ [m]",
               si_L           = "SI length $L$ [m]",
-              slab_t         = "Slab thickness [m]",
-              ltp_t          = "LTP thickness [m]",
-              si_num         = "SI per direction",
+              slab_t         = r"Slab thickness $t_{\mathrm{slab}}$ [m]",
+              ltp_t          = r"LTP thickness $t_{\mathrm{LTP}}$ [m]",
+              si_num         = r"Piles per row $a_x$ [-]",
               si_E           = "SI stiffness [kPa]",
               si_method      = "SI method",
               raster         = "Grid arrangement",
-              cost           = "Cost [€]",
+              cost           = "Costs [€]",
               u              = "Settlement [m]",
               g              = "Objectives [-]",
               max_evaluation = "Max. evaluation",
@@ -49,8 +49,8 @@ PARAM_INFO = {"cost":       ("C",       "€",    "Costs"),
               "si_L":       ("L",       "m",    "SI length"),
               "si_R":       ("R",       "m",    "SI radius"),
               "si_E":       ("E",       "kPa",  "SI stiffness"),
-              "ltp":        ("LTP",     "m",    "LTP thickness"),
-              "slab":       ("Slab",    "m",    "slab thickness"),
+              "ltp_t":      ("LTP",     "m",    "LTP thickness"),
+              "slab_t":     ("Slab",    "m",    "slab thickness"),
               }
 PARAMS = ["slab_t", "ltp_t", "si_num", "si_L", "si_R", "si_E",
           "si_method", "raster"]
@@ -554,53 +554,42 @@ def plot_convergence(paths,
               if group_by == "algorithm"
               else list(df.groupby(group_by, sort=False))
               )
+    valid_cost_values = []
+    valid_cv_values = []
     for i, (name, group) in enumerate(groups):
         color = colors[i % len(colors)]
         group = group.sort_values("evaluation")
-        x = pd.to_numeric(group.evaluation).to_numpy()
-        valid = group.status.astype(str).str.strip().eq("OK").to_numpy()
-        cost = pd.to_numeric(group.cost, errors="coerce").to_numpy()
-        good = valid & np.isfinite(cost) & (cost < 1e11)
+        x = pd.to_numeric(group["evaluation"], errors="coerce").to_numpy(dtype=float)
+        valid = group["status"].astype(str).str.strip().eq("OK").to_numpy()
+        cost = pd.to_numeric(group["cost"], errors="coerce").to_numpy(dtype=float)
+        good = valid & np.isfinite(cost) & (cost < 1e11) & np.isfinite(x)
+
         if show_cost:
-            ax.plot(x,
-                    np.where(good, cost, np.nan),
-                    color=color,
-                    lw=0.8,
-                    alpha=0.3,
-                    linestyle="-"
-                    )
+            if np.any(good):
+                valid_cost_values.extend(cost[good])
+                ax.plot(x, np.where(good, cost, np.nan),
+                        color=color, lw=0.8, alpha=0.3, linestyle="-")
+            else:
+                print(f"Warning: No valid cost values for {name}")
             if best:
-                feasible = group.feasible.to_numpy(dtype=bool) & good
-                running = pd.Series(np.where(feasible,
-                                             cost,
-                                             np.inf)
-                                    ).cummin().replace(np.inf,
-                                                       np.nan
-                                                       )
-                ax.plot(x,
-                        running,
-                        color=color,
-                        lw=1.8,
-                        linestyle="-"
-                        )
+                feasible = group["feasible"].to_numpy(dtype=bool) & good
+                running = (pd.Series(np.where(feasible, cost, np.inf))
+                           .cummin().replace(np.inf, np.nan).to_numpy())
+                ax.plot(x, running, color=color, lw=1.8, linestyle="-")
+
         if show_constraints:
-            cv = (pd.to_numeric(group["cv_norm"],
-                                errors="coerce").to_numpy()
+            cv = (pd.to_numeric(group["cv_norm"], errors="coerce")
+                  .to_numpy(dtype=float)
                   if "cv_norm" in group
-                  else np.full(len(group), np.nan)
-                  )
-            cv_ax.plot(x,
-                       np.where(valid, cv, np.nan),
-                       color=color,
-                       lw=1.1,
-                       linestyle="--"
-                       )
-        color_legend.append(Line2D([],
-                                   [],
-                                   color=color,
-                                   lw=2,
-                                   label=str(name).split(" (", 1)[0]
-                                   ))
+                  else np.full(len(group), np.nan))
+            good_cv = valid & np.isfinite(cv) & np.isfinite(x)
+            if np.any(good_cv):
+                valid_cv_values.extend(cv[good_cv])
+            cv_ax.plot(x, np.where(good_cv, cv, np.nan),
+                       color=color, lw=1.1, linestyle="--")
+
+        color_legend.append(Line2D([], [], color=color, lw=2,
+                                   label=str(name).split(" (", 1)[0]))
     reference_handle = None
     if reference_path is not None:
         if not show_cost:
@@ -646,20 +635,24 @@ def plot_convergence(paths,
     ax.set_xlabel("Iteration [-]")
     if show_cost:
         ax.set_ylabel("Cost [€]")
-        cost_min = ax.dataLim.ymin
-        cost_max = ax.dataLim.ymax
-        cost_step = _nice_step((cost_max - cost_min) / 5)
-        cost_unit = 10.0 ** np.floor(np.log10(cost_step))
-        cost_start = np.floor(cost_min / cost_unit) * cost_unit
-        cost_intervals = max(5,
-                             int(np.ceil((cost_max - cost_start)
-                                         / cost_step))
-                             )
+        if valid_cost_values:
+            cost_min = float(np.min(valid_cost_values))
+            cost_max = float(np.max(valid_cost_values))
+            cost_range = cost_max - cost_min
+            cost_step = (_nice_step(cost_range / 5)
+                         if cost_range > 0
+                         else max(abs(cost_max) * 0.1, 1.0))
+            cost_unit = 10.0 ** np.floor(np.log10(cost_step))
+            cost_start = np.floor(cost_min / cost_unit) * cost_unit
+            cost_intervals = max(5, int(np.ceil((cost_max - cost_start) / cost_step)))
+        else:
+            print("Warning: No valid costs found for convergence plot.")
+            cost_step, cost_start, cost_intervals = 1.0, 0.0, 5
     else:
         cost_intervals = 0
     if show_constraints:
         cv_ax.set_ylabel("Normalised constraint\nviolation [-]")
-        cv_max = max(0.0, cv_ax.dataLim.ymax)
+        cv_max = max(0.0, float(np.max(valid_cv_values))) if valid_cv_values else 0.0
         cv_step = _nice_step(cv_max / 5)
         cv_intervals = int(np.ceil(cv_max / cv_step))
     else:
@@ -816,8 +809,9 @@ def plot_best_feasible(paths,
     ))
     # Maximum two additional parameters per plot because
     # cost occupies the first y-axis.
-    groups = [params[i:i + 2]
-              for i in range(0, len(params), 2)]
+    groups = ([params]
+              + [[p] for p in params]
+              + [params[i:i + 2] for i in range(0, len(params), 2)])
     results = []
     for i, group in enumerate(groups, start=1):
         # Keep original filename for the first plot.
@@ -850,52 +844,106 @@ def plot_best_feasible(paths,
     results.append(result)
     return results, groups
 
+# Shared publication labels for both best-feasible plots.
+BEST_FEASIBLE_INFO = {
+    "cost": (r"$C$", "Costs [€]", "€"),
+    "slab_t": (r"$t_{\mathrm{slab}}$", r"Slab thickness $t_{\mathrm{slab}}$ [m]", "m"),
+    "ltp_t": (r"$t_{\mathrm{LTP}}$", r"LTP thickness $t_{\mathrm{LTP}}$ [m]", "m"),
+    "si_num": (r"$a_x$", r"Piles per row $a_x$ [-]", ""),
+    "si_L": (r"$L$", "SI length $L$ [m]", "m"),
+    "si_R": (r"$r_{\mathrm{SI}}$", r"SI radius $r_{\mathrm{SI}}$ [m]", "m"),
+    "si_E": (r"$E_{\mathrm{SI}}$", r"SI stiffness $E_{\mathrm{SI}}$ [kPa]", "kPa"),
+    "si_method": (r"$M$", r"SI method $M$ [-]", ""),
+}
+
 def _param_label(param):
-    name, unit, _ = PARAM_INFO.get(param,
-                                   (param, "", param))
+    if param in BEST_FEASIBLE_INFO:
+        return BEST_FEASIBLE_INFO[param][1]
+    name, unit, _ = PARAM_INFO.get(param, (param, "", param))
     return f"{name} [{unit}]" if unit else name
 
 def _legend_label(param):
-    return PARAM_INFO.get(param,
-                          (param, "", param))[2]
+    return _param_label(param)
 
-def _axis_limits(values,
-                 n_intervals=5):
+def _bar_value_text(param, original):
+    symbol, _, unit = BEST_FEASIBLE_INFO.get(param, (param, param, ""))
+    try:
+        value = float(original)
+        number = (f"{value:,.0f}".replace(",", " ") if param == "cost"
+                  else f"{value:.2f}" if unit == "m" else f"{value:g}")
+    except (ValueError, TypeError):
+        number = str(original)
+    return f"{symbol} = {number}" + (f" {unit}" if unit else "")
+
+def _best_seed(path):
+    # Supports ...seed1_GA, ...seed2_DE, ..._seed3, and seed-4.
+    pathstr = str(path).replace("\\", "/")
+    match = re.search(r"seed[_-]?(\d+)(?=[/_-]|$)", pathstr, re.I)
+    return int(match.group(1)) if match else None
+
+def _run_sort_key(row):
+    name = str(row["algorithm"])
+    preferred = {"GA": 0, "DE": 1, "ISRES": 2, "MVGA": 3, "PSO": 4}
+    return (preferred.get(name.upper(), 100), name.upper(),
+            float("inf") if pd.isna(row["seed"]) else int(row["seed"]),
+            int(row["_order"]))
+
+def _axis_limits(values, n_intervals=4, quantum=0.01, padding=0.45):
+    """Exactly five aligned ticks, using rounded steps and enclosing the data."""
     values = np.asarray(values, dtype=float)
     values = values[np.isfinite(values)]
-    if len(values) == 0:
-        return (0.0,
-                1.0,
-                np.linspace(0,
-                            1,
-                            n_intervals + 1
-                            )
-                )
-    vmin, vmax = float(np.min(values)), float(np.max(values))
-    required_min = vmin
-    required_max = vmax
-    # required_min = min(0.0, vmin)
-    # required_max = max(0.0, vmax)
-    span = required_max - required_min
-    if span == 0:  span = 1.0
-    # Generous space for the vertical labels above the bars.
-    required_max += 0.45 * span
-    raw_step = (required_max - required_min) / n_intervals
-    step = _nice_step(raw_step)
-    lower = np.floor(required_min / step) * step
-    upper = lower + n_intervals * step
-    while upper < required_max:
-        old_step = step
-        step = _nice_step(step * 1.25)
-        # Sicherstellen, dass step tatsächlich wächst
-        if step <= old_step:
-            step = old_step * 2.0
-        lower = np.floor(required_min / step) * step
-        upper = lower + n_intervals * step
-    ticks = np.linspace(lower,
-                        upper,
-                        n_intervals + 1)
-    return float(lower), float(upper), ticks
+    if not len(values):
+        values = np.array([0.0, 1.0])
+    lo, hi = float(values.min()), float(values.max())
+    span = max(hi - lo, abs(hi) * 0.1, quantum)
+    hi += padding * span
+    required = max((hi - lo) / n_intervals, quantum)
+    power = 10.0 ** np.floor(np.log10(required))
+    for _ in range(30):
+        for leading in (1, 2, 2.5, 5, 10):
+            step = max(quantum, np.ceil(leading * power / quantum - 1e-10) * quantum)
+            lower = np.floor(lo / step + 1e-10) * step
+            upper = lower + n_intervals * step
+            if step >= required * (1 - 1e-10) and upper >= hi - quantum * 1e-8:
+                return lower, upper, lower + np.arange(n_intervals + 1) * step
+        power *= 10
+    raise ValueError("Unable to construct finite axis limits")
+
+
+def _format_best_axis(axis, param, values, padding=0.45):
+    """Format raw coordinates; scaling affects tick labels only."""
+    from matplotlib.transforms import ScaledTranslation
+    unit = BEST_FEASIBLE_INFO.get(param, (None, None, ""))[2]
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    magnitude = float(np.max(np.abs(finite))) if len(finite) else 0.0
+    exponent = (int(3 * np.floor(np.log10(magnitude) / 3))
+                if magnitude >= 1000 and unit != "m" else 0)
+    scale = 10.0 ** exponent
+    decimals = 2 if unit == "m" else 0
+    quantum = 10.0 ** (-decimals)
+    lo, hi, ticks = _axis_limits(finite / scale, quantum=quantum, padding=padding)
+    axis.set_ylim(lo * scale, hi * scale)
+    axis.set_yticks(ticks * scale)
+    axis.yaxis.set_major_formatter(FuncFormatter(
+        lambda value, _, scale=scale, decimals=decimals: f"{value / scale:.{decimals}f}"))
+    axis.yaxis.offsetText.set_visible(False)
+    old = getattr(axis, "_engineering_text", None)
+    if old is not None:
+        old.remove()
+    axis._engineering_text = None
+    if exponent:
+        side = axis.yaxis.get_ticks_position()
+        right = side == "right"
+        position = axis.spines["right" if right else "left"].get_position()
+        offset = position[1] if position[0] == "outward" else 0
+        transform = axis.transAxes + ScaledTranslation(
+            (offset if right else -offset) / 72, 0,
+            axis.figure.dpi_scale_trans)
+        axis._engineering_text = axis.text(
+            1 if right else 0, 1.02, rf"$\times 10^{{{exponent}}}$",
+            transform=transform, ha="left", va="bottom", clip_on=False)
+
 
 def _best_feasible(paths,
                    save_path,
@@ -905,8 +953,8 @@ def _best_feasible(paths,
                            "si_num",
                            "si_L",
                            "si_R",
-                           "ltp",
-                           "slab"),
+                           "ltp_t",
+                           "slab_t"),
                    labels=None):
     """
     Plot and LaTeX table of the best feasible design for each optimisation run.
@@ -975,7 +1023,9 @@ def _best_feasible(paths,
                                                            )
         elif "algorithm" in best.index: run_label = str(best["algorithm"])
         else:                           run_label = f"Run {i + 1}"
-        result = {"run": run_label, "cost": float(best["cost"])}
+        result = {"run": run_label, "algorithm": str(best["algorithm"]),
+                  "seed": _best_seed(path), "_order": i,
+                  "cost": float(best["cost"])}
         for param in params:
             result[param] = (best[param]
                              if param in best.index
@@ -984,6 +1034,14 @@ def _best_feasible(paths,
         result.update(counters)
         results.append(result)
     best_df = pd.DataFrame(results)
+    best_df = best_df.iloc[sorted(range(len(best_df)),
+        key=lambda i: _run_sort_key(best_df.iloc[i]))].reset_index(drop=True)
+    repeated = best_df["algorithm"].duplicated(keep=False).any()
+    best_df["display_run"] = [
+        (f"{row['algorithm']} - {int(row['seed'])}"
+         if pd.notna(row['seed']) else
+         (f"{row['algorithm']} - {i+1}" if repeated else str(row['algorithm'])))
+        for i, (_, row) in enumerate(best_df.iterrows())]
     plot_params = ["cost"] + [param
                               for param in params
                               if param in best_df.columns
@@ -996,7 +1054,7 @@ def _best_feasible(paths,
     algorithm_col = ("algorithm"
                      if "algorithm" in best_df.columns
                      else "run")
-    algorithms = list(dict.fromkeys(best_df[algorithm_col].astype(str)))
+    algorithms = best_df["display_run"].astype(str).tolist()
     n_algorithms = len(algorithms)
     # fig, ax_cost = plt.subplots(figsize=(DEF_figWidth,
     #                                      DEF_figHeight)
@@ -1048,12 +1106,8 @@ def _best_feasible(paths,
             category_names[param] = names
     values = {param: [] for param in plot_params}
     rows_by_algorithm = {}
-    for algorithm in algorithms:
-        rows = best_df.loc[best_df[algorithm_col]
-                           .astype(str).eq(str(algorithm))]
-        if rows.empty: continue
-        row = rows.iloc[0]
-        rows_by_algorithm[algorithm] = row
+    for _, row in best_df.iterrows():
+        rows_by_algorithm[str(row["display_run"])] = row
         for param in plot_params:
             if param in row.index and pd.notna(row[param]):
                 values[param].append(float(plot_values[param].loc[row.name]))
@@ -1063,33 +1117,12 @@ def _best_feasible(paths,
         if param in category_names:
             names = category_names[param]
             axis.set_ylim(0.0, len(names) + 0.8)
-            axis.set_yticks(range(1, len(names) + 1))
-            axis.set_yticklabels(names, fontsize=6)
+            axis.set_yticks([])
+            axis.spines["right"].set_visible(False)
         else:
-            pmin, pmax, pticks = _axis_limits(values[param])
-            axis.set_ylim(pmin, pmax)
-            axis.set_yticks(pticks)
-    cost_ticks = axes[0].get_yticks()
-    cost_step = (cost_ticks[1] - cost_ticks[0]
-                 if len(cost_ticks) > 1
-                 else np.diff(axes[0].get_ylim())[0])
-    scale, exponent = _cost_scale(cost_step)
-    axes[0].yaxis.set_major_formatter(FuncFormatter(lambda value,
-                                                    _: f"{value / scale:g}"))
-    if exponent != 0:
-        ax_cost.text(1,
-                     1.02,
-                     rf"$\times 10^{{{exponent}}}$",
-                     transform=ax_cost.transAxes,
-                     ha="left",
-                     va="bottom"
-                     )
-    for axis, param in zip(axes[1:], plot_params[1:]):
-        if param not in category_names:
-            axis.yaxis.set_major_formatter(FuncFormatter(lambda value,
-                                                          _: f"{value:g}"))
+            _format_best_axis(axis, param, values[param])
     for axis, param in zip(axes, plot_params):
-        axis.set_ylabel(_param_label(param),
+        axis.set_ylabel("" if param in category_names else _param_label(param),
                         rotation    = 90,
                         labelpad    = 4,
                         fontsize    = ax_cost.xaxis.label.get_size(),
@@ -1103,15 +1136,16 @@ def _best_feasible(paths,
                                0.4,
                                n_bars)
               )
-    group_width = DEF_bestGroupWidth
+    group_width = 0.68
     bar_width = group_width / n_bars
     x = np.arange(n_algorithms, dtype=float)
     offsets = ((np.arange(n_bars) - (n_bars - 1) / 2) * bar_width)
     bars = []
+    color_algorithms = list(dict.fromkeys(best_df["algorithm"].astype(str)))
     for i, algorithm in enumerate(algorithms):
         row = rows_by_algorithm.get(algorithm)
         if row is None: continue
-        algorithm_color = colors[i % len(colors)]
+        algorithm_color = colors[color_algorithms.index(str(row["algorithm"])) % len(colors)]
         for j, (param, axis) in enumerate(zip(plot_params, axes)):
             if param not in row.index or pd.isna(row[param]):
                 continue
@@ -1129,10 +1163,7 @@ def _best_feasible(paths,
             bars.append((bar, value, row[param], param, axis))
     value_labels = []
     for bar, value, original, param, axis in bars:
-        text = (str(original)
-                if param in category_names
-                else f"{value:,.0f}".replace(",", " ")
-                if param == "cost" else f"{value:g}")
+        text = _bar_value_text(param, original)
         annotation = axis.annotate(text,
                                    xy           = (bar.get_x() +
                                                    bar.get_width() / 2,
@@ -1151,7 +1182,8 @@ def _best_feasible(paths,
         value_labels.append((annotation, axis))
     ax_cost.set_xticks(x)
     ax_cost.set_xticklabels(algorithms)
-    ax_cost.set_xlabel("Optimisation algorithm")
+    ax_cost.set_xlabel("Optimisation algorithm – seed" if best_df.seed.notna().any()
+                       else "Optimisation algorithm")
     ax_cost.set_xlim(-0.55, n_algorithms - 0.45)
     # Draw the grid only once: all axes have aligned tick positions.
     ax_cost.set_axisbelow(True)
@@ -1201,19 +1233,23 @@ def _best_feasible(paths,
             axis.set_ylim(lower, lower + (upper - lower) * factor)
             if param in category_names:
                 names = category_names[param]
-                axis.set_yticks(range(1, len(names) + 1))
-                axis.set_yticklabels(names, fontsize=6)
+                axis.set_yticks([])
             else:
-                axis.set_yticks(np.linspace(lower,
-                                            lower + (upper - lower) * factor, 6))
+                _format_best_axis(axis, param,
+                                  [lower, lower + (upper - lower) * factor],
+                                  padding=0.0)
     plot_path = os.path.normpath(save_path) + "_plot"
     os.makedirs(plot_path, exist_ok=True)
     pdf_name = os.path.splitext(filename)[0] + ".pdf"
     image_path = os.path.join(plot_path, pdf_name)
     fig.savefig(image_path, format="pdf", bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
+    # Additional 15 cm, axis-free comparison. The original figure remains.
+    compact_path = _best_feasible_compact(best_df, plot_params, category_names,
+                                         save_path, filename)
 
-    table_df = best_df.drop(columns=["_variation"], errors="ignore").copy()
+    table_df = best_df.drop(columns=["_variation", "_order", "display_run"],
+                            errors="ignore").copy()
 
     def _tex_cell(value, parameter):
         if pd.isna(value):
@@ -1247,6 +1283,78 @@ def _best_feasible(paths,
                    )
     return image_path, table_path, best_df
 
+def _best_feasible_compact(best_df, plot_params, category_names, save_path,
+                           filename):
+    """Separate best-feasible overview, with per-parameter normalised bar heights.
+
+    No y axes are displayed. Numeric labels show unscaled original quantities.
+    Each parameter uses its own data range: bar heights are NOT comparable
+    between different parameters.
+    """
+    import matplotlib.patches as mpatches
+    width_cm, height_cm = 15.0, 10.2
+    fig, ax = plt.subplots(figsize=(width_cm / DEF_cmTOinch,
+                                    height_cm / DEF_cmTOinch), dpi=600)
+    params = [p for p in plot_params if p in best_df]
+    if not params:
+        plt.close(fig)
+        return None
+    n_runs, n_params = len(best_df), len(params)
+    colors = fct_setPlotstyle(case=0, flat=True, r=1)[1] or ["0.35"]
+    alphas = np.linspace(1, 0.42, n_params) if n_params > 1 else [1.0]
+    x = np.arange(n_runs, dtype=float) * 0.89
+    group_width = 0.74
+    bar_step = group_width / n_params
+    offsets = (np.arange(n_params) - (n_params - 1) / 2) * bar_step
+    handles = []
+    color_algorithms = list(dict.fromkeys(best_df["algorithm"].astype(str)))
+    for j, param in enumerate(params):
+        raw = best_df[param]
+        numeric = pd.to_numeric(raw, errors="coerce")
+        if numeric.notna().all():
+            # Heights use the magnitude relative to the parameter maximum.
+            # Ensures all columns start at zero and preserve their ordering.
+            maximum = max(abs(numeric).max(), 1e-12)
+            heights = np.maximum(numeric.to_numpy(dtype=float) / maximum, 0)
+        else:
+            categories = list(dict.fromkeys(raw.astype(str)))
+            heights = np.array([(categories.index(str(v)) + 1) /
+                                len(categories) for v in raw], dtype=float)
+        handles.append(mpatches.Patch(facecolor="0.45", alpha=alphas[j],
+                                      edgecolor="black", label=_legend_label(param)))
+        for i, (value, height) in enumerate(zip(raw, heights)):
+            bar = ax.bar(x[i] + offsets[j], height, width=bar_step * 0.82,
+                         color=colors[color_algorithms.index(str(best_df.iloc[i]["algorithm"])) % len(colors)], alpha=alphas[j],
+                         edgecolor="black", linewidth=0.4, zorder=3)[0]
+            # Categorical method: use a short vertical marker; see legend below.
+            ax.annotate(_bar_value_text(param, value),
+                        (bar.get_x() + bar.get_width()/2, float(height)),
+                        xytext=(0, 4), textcoords="offset points",
+                        rotation=90, ha="center", va="bottom", fontsize=5.8,
+                        annotation_clip=False)
+    ax.set_xticks(x, best_df["display_run"].astype(str))
+    ax.set_xlabel("Optimisation algorithm – seed" if best_df.seed.notna().any()
+                  else "Optimisation algorithm")
+    ax.set_xlim(x[0] - 0.49, x[-1] + 0.49)
+    ax.set_ylim(0, 1.65)
+    ax.set_yticks([])
+    ax.set_ylabel("")
+    ax.spines["left"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.grid(False)
+    fig.subplots_adjust(left=0.45/width_cm, right=1-0.25/width_cm,
+                        bottom=2.75/height_cm, top=1-0.45/height_cm)
+    fig.legend(handles=handles, title="Parameter", ncol=min(3, n_params),
+               frameon=False, fontsize=6, title_fontsize=7,
+               loc="lower center", bbox_to_anchor=(0.5, 0.01))
+    os.makedirs(os.path.normpath(save_path) + "_plot", exist_ok=True)
+    output = os.path.join(os.path.normpath(save_path) + "_plot",
+                          os.path.splitext(filename)[0] + "_CONDENSED.pdf")
+    fig.savefig(output, format="pdf", dpi=600, bbox_inches=None)
+    plt.close(fig)
+    return output
+
 ###############################################################################
 #--------------------------------- EVOLUTION ----------------------------------
 ###############################################################################
@@ -1264,6 +1372,29 @@ def _plot_evolution(paths,
                      if isinstance(paths, (str, os.PathLike))
                      else os.path.dirname(str(paths[0])))
     if not params:
+        return None
+    # Skip unavailable measurements without aborting the other plots.
+    # A missing cost is not a categorical label: only finite numeric values
+    # are meaningful for cost/settlement evolution.
+    usable_params = []
+    for param in params:
+        if param not in df.columns:
+            print(f"_plot_evolution: '{param}' missing; skipping it.")
+            continue
+        if param in ("cost", "u"):
+            numeric = pd.to_numeric(df[param], errors="coerce")
+            valid = np.isfinite(numeric.to_numpy(dtype=float))
+            valid &= df.status.astype(str).str.strip().eq("OK").to_numpy()
+            if not valid.any():
+                print(f"_plot_evolution: no valid '{param}' values; skipping it.")
+                continue
+        elif not df[param].notna().any():
+            print(f"_plot_evolution: no '{param}' values; skipping it.")
+            continue
+        usable_params.append(param)
+    params = usable_params
+    if not params:
+        print("_plot_evolution: no plottable parameters found; skipping plot.")
         return None
     # Every parameter gets one consistent encoding across all run groups.
     prepared = {param: _prepare_plot_axis(df, param) for param in params}
@@ -1283,7 +1414,8 @@ def _plot_evolution(paths,
     if "cost" in params:
         cost_values = pd.to_numeric(df["cost"],
                                     errors="coerce")
-        cost_values = cost_values[np.isfinite(cost_values)]
+        cost_values = cost_values[np.isfinite(cost_values)
+                                  & df.status.astype(str).str.strip().eq("OK")]
         if len(cost_values) > 0:
             cost_step = (cost_values.max() - cost_values.min()) / 5
             cost_scale, cost_exponent = _cost_scale(cost_step)
@@ -1517,6 +1649,49 @@ def plot_parallel_coordinates(paths,
 #------------------------------------ MAIN ------------------------------------
 ###############################################################################
 
+def _find_sibling_seed_runs(path):
+    """Discover every algorithm/seed run belonging to the current study.
+
+    Examples: Opt_Yasser210_seed1_GA, Opt_Yasser210_seed2_DE,
+    Opt_Yasser210_seed3_comparison. Only folders with CSV histories are used.
+    """
+    folder = os.path.normpath(str(path))
+    parent, basename = os.path.split(folder)
+    match = re.search(r"seed[_-]?(\d+)(?=[_-]|$)", basename, re.I)
+    if match is None:
+        return [folder] if os.path.isfile(os.path.join(folder, "optimization_history.csv")) else []
+    prefix = basename[:match.start()]
+    candidates = []
+    for name in os.listdir(parent):
+        candidate = os.path.join(parent, name)
+        if not os.path.isdir(candidate) or name.lower().endswith('_plot'):
+            continue
+        m = re.fullmatch(re.escape(prefix) + r"seed[_-]?(\d+)(?:[_-].*)?",
+                         name, re.I)
+        if m is None or not os.path.isfile(os.path.join(candidate, "optimization_history.csv")):
+            continue
+        candidates.append((int(m.group(1)), candidate))
+    return [candidate for _, candidate in sorted(candidates, key=lambda row: (row[0], row[1].lower()))]
+
+
+def _best_feasible_valid_paths(paths):
+    """Keep individual runs that have at least one successful feasible cost."""
+    result = []
+    for folder in paths:
+        df = _read(folder)
+        if df.empty or not {'status', 'feasible', 'cost'} <= set(df.columns):
+            print('Best feasible: skipping incomplete history:', folder)
+            continue
+        mask = (df['status'].astype(str).str.strip().eq('OK') &
+                df['feasible'].astype(bool) &
+                np.isfinite(pd.to_numeric(df['cost'], errors='coerce')))
+        if mask.any():
+            result.append(folder)
+        else:
+            print('Best feasible: no valid feasible result:', folder)
+    return result
+
+
 def opt_plot(path, requested, cfg):
     fct_setPlottext()
     outputs = {}
@@ -1544,6 +1719,40 @@ def opt_plot(path, requested, cfg):
                    else "surface"
                    )
         outputs["landscape"] = plot_landscape(path, variant=variant)
+    if "best_feasible" in requested:
+        run_folder = os.path.normpath(str(path))
+        parent, run_name = os.path.split(run_folder)
+        # All algorithms and seeds share one output folder, even when the
+        # selected run ends in _GA, _DE, _PSO, or _comparison.
+        m = re.search(r"seed[_-]?\d+(?=[_-]|$)", run_name, re.I)
+        if m:
+            common_name = run_name[:m.start()] + "seed_comparison"
+        else:
+            common_name = run_name + "_seed_comparison"
+        shared_save_path = os.path.join(parent, common_name)
+        seed_paths = _best_feasible_valid_paths(_find_sibling_seed_runs(path))
+        print("Best feasible runs:", *seed_paths, sep="\n  ")
+        outputs["best_feasible"] = {}
+        if seed_paths:
+            # Individual algorithm plots and one additional combined plot.
+            by_algorithm = {}
+            for run_path in seed_paths:
+                run_df = _read(run_path)
+                for algorithm in run_df['algorithm'].dropna().astype(str).unique():
+                    by_algorithm.setdefault(algorithm, []).append(run_path)
+            for algorithm, algo_paths in sorted(by_algorithm.items()):
+                # A CSV normally contains only one algorithm. Avoid duplicating
+                # mixed-algorithm CSV folders in several individual plots.
+                if all(_read(f)['algorithm'].nunique() == 1 for f in algo_paths):
+                    print('Best feasible algorithm:', algorithm, len(algo_paths), 'runs')
+                    outputs['best_feasible'][algorithm] = plot_best_feasible(
+                        algo_paths, shared_save_path)
+            print('Best feasible combined:', len(seed_paths), 'runs')
+            outputs['best_feasible']['all_algorithms'] = plot_best_feasible(
+                seed_paths, shared_save_path)
+        else:
+            print('Best feasible: no usable runs found.')
+        print('Best feasible plots:', shared_save_path + '_plot')
     if ("landscape_feasible" in requested):
         outputs["landscape"] = plot_landscape(path, variant="feasible")
         plot_best_feasible(path, path)
@@ -1639,8 +1848,22 @@ def read_best_feasible_tables(paths,
             or any(len(row) != len(rows[0])
                    for row in rows)):
             raise ValueError(f"Ungültige oder leere Tabelle:\n{file}")
-        columns = [aliases.get(column, column)
-                   for column in rows[0]]
+        columns = [
+            column if column == "run" and "algorithm" in rows[0]
+            else aliases.get(column, column)
+            for column in rows[0]
+            ]
+        from collections import Counter
+        duplicates = {
+            name: count
+            for name, count in Counter(columns).items()
+            if count > 1
+            }
+        if duplicates:
+            print(f"Datei: {file}")
+            print(f"Originale Spalten: {rows[0]}")
+            print(f"Spalten nach aliases: {columns}")
+            print(f"Doppelte Spalten: {duplicates}")
         if len(set(columns)) != len(columns):
             raise ValueError(f"Doppelte Spaltennamen:\n{file}")
         data = pd.DataFrame(rows[1:], columns=columns,)
@@ -1713,6 +1936,10 @@ def plot_best_feasible_points(paths,
                                      labels=labels,
                                      table_filename=table_filename,
                                      )
+    # Backward-compatible names used by older calling scripts.
+    parameter_aliases = {"ltp": "ltp_t", "slab": "slab_t"}
+    x = parameter_aliases.get(x, x)
+    y = parameter_aliases.get(y, y)
     if x == y:
         raise ValueError("x und y müssen unterschiedlich sein.")
     plot_x, categories_x = _prepare_plot_axis(data, x)
@@ -1964,7 +2191,7 @@ def plot_optimization_statistics(RUN_DEVICE,
                       np.linspace(1.0, 0.4, len(seeds))))
     metrics = [("Cost",       1e-3, r"Cost [€$\times 10^3$]"),
                ("Settlement", 1,    "Settlement [mm]"),
-               ("Runtime",    1,    "Recorded runtime [h]")]
+               ("Runtime",    1,    "Runtime [h]")]
     # Separate PDF for each study and metric
     DEF_figWidth_specificLEG = 4 / DEF_cmTOinch
     DEF_figWidth_specific = DEF_figWidth - DEF_figWidth_specificLEG

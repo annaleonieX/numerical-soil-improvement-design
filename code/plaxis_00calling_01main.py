@@ -15,7 +15,7 @@ path, plaxis3Dpw, plaxis2Dpw, study type, output and dimension.
 ###############################################################################
 
 ### Modelsetup within 00calling_02helper
-device     = 27
+device     = 89
 pathFolder = r'Optimization - 2026-09-26 - Sensitivity Study'
 
 # pip install plxscripting
@@ -200,7 +200,7 @@ folders     = run_study(device,
                         folders           = [],
                         )
 if   device == 0:  output = []
-elif device == 27: output = [4]
+elif device == 27: output = []
 else:              output = []
 dimensions  = ['unitcell2','unitcell3']
 variations  = ['medium', 'fineMedium', 'fine']
@@ -340,18 +340,19 @@ elif device == 89: output = []
 else:              output = []
 dimensions  = ['quarter3']
 variations  = [3,7,11,15,19,23,27,31,34]
+slabNew     = 0.5
 if 1 in output: raise KeyboardInterrupt # already calc
 folders     = run_study(device,
                         output,
                         pathFolder,
                         dimensions,#siNumRefeval
                         variations,
-                        folder_func       = lambda v,d: f'slab05siNumRef_{v}_{d}',
+                        folder_func       = lambda v,d: f'slab0.5siNumRef_{v}_{d}',
                         model_kwargs_func = lambda v:   {'soil': 'Refmodel',
-                                                         'slab_height': 0.5,
+                                                         'slab_height': slabNew,
                                                          'si_numberx': v,
                                                          'si_numbery': v},
-                        folders           = ['slab05siNumRef_1_unitcell2'],
+                        folders           = ['slab0.5siNumRef_1_unitcell2'],
                         foldersComp       = ([]
                                              + ['siNumRef_1_unitcell2']
                                              + ['siNumRef_1_quarter3']
@@ -582,21 +583,23 @@ else:              output = []
 # pathFolder  = r'Optimization - 2026-09-14-v1 - 08 - slab - group effect'
 dimensions  = ['quarter3']
 variations  = [1,3,7,11,15,19,23,27]
+slabNew     = 1.7
 folders     = run_study(device,
                         output,
                         pathFolder,
                         dimensions,
                         variations,
-                        folder_func       = lambda v,d: f'slab17siNum_{v}_{d}',
-                        model_kwargs_func = lambda v:   {'slab_height': 1.7,
+                        folder_func       = lambda v,d: f'slab{slabNew}siNum_{v}_{d}',
+                        model_kwargs_func = lambda v:   {'slab_height': slabNew,
                                                          'si_numberx':  v,
                                                          'si_numbery':  v},
-                        folders           = ['slab17siNum_1_unitcell2'], #copy
-                        foldersComp       = ([]
-                                             + ['siNum_1_unitcell2']
-                                             + ['siNum_1_quarter3']
-                                             + [f'siNum_{n}_quarter3'
-                                                for n in range(3, 24, 4)]),
+                        folders     = [f'slab{slabNew}siNum_1_unitcell2'], #copy
+                        foldersComp = ([]
+                                       + ['siNum_1_unitcell2']
+                                       + ['siNum_1_quarter3']
+                                       + [f'siNum_{n}_quarter3'
+                                          for n in range(3, 24, 4)
+                                          ]),
                         )
 
 ### ltp variation
@@ -642,6 +645,8 @@ else:              output = []
 # pathFolder  = r'Optimization - 2026-09-14-v1 - 09 - ltp - group effect'
 dimensions  = ['quarter3']
 variations  = [1,3,7,11,15,19] # 23,27 took too long
+# dimensions  = ['unitcell2']
+# variations  = [1] # 23,27 took too long
 folders     = run_study(device,
                         output,
                         pathFolder,
@@ -1238,58 +1243,26 @@ if 6 in output:
 ################################ OPTIMIZATIONS ################################
 ###############################################################################
 
-if device == 27:
+if device == 27: # reference study
     print('start opt')
     for seedNr in [3]:
-        for studyNR in [
-                        # 221,
-                        # 222,
-                        # 223,
-                        # 224,
-                        # 225,
-                        # 226,
-                        ]:
-            # print(f'opti {seedNr} and {studyNR}')
+        for studyNR in [211]:
             fct_opt(study           = studyNR,
                     seed            = seedNr,
                     RUN_DEVICE      = device,
-                    RUN_COMPalgo    = True,
-                    RUN_COMPplot    = False,
-                    RUN_GRID        = False,
-                    RUN_GRIDplot    = False,
-                    RUN_PLOTcost    = False,
-                    RUN_PLOTcons    = False,
-                    RUN_PLOTboth    = False,
-                    RUN_PLOTpara    = False,
-                    RUN_PLOTgrid    = False,
-                    RUN_PLOTstat    = False,
-                    )
-    for seedNr in [2,3]:
-        for studyNR in [
-                        # 221,
-                        # 222,
-                        # 223,
-                        # 224,
-                        # 225,
-                        # 226,
-                        ]:
-            # print(f'opti {seedNr} and {studyNR}')
-            fct_opt(study           = studyNR,
-                    seed            = seedNr,
-                    RUN_DEVICE      = device,
-                    RUN_COMPalgo    = True,
-                    RUN_COMPplot    = False,
-                    RUN_GRID        = False,
-                    RUN_GRIDplot    = False,
-                    RUN_PLOTcost    = False,
-                    RUN_PLOTcons    = False,
-                    RUN_PLOTboth    = False,
-                    RUN_PLOTpara    = False,
-                    RUN_PLOTgrid    = False,
-                    RUN_PLOTstat    = False,
+                      RUN_COMPalgo    = True,
+                      RUN_COMPplot    = False,
+                      RUN_GRID        = False,
+                      RUN_GRIDplot    = False,
+                      RUN_PLOTcost    = False,
+                      RUN_PLOTcons    = False,
+                      RUN_PLOTboth    = False,
+                      RUN_PLOTpara    = False,
+                      RUN_PLOTgrid    = False,
+                      RUN_PLOTstat    = False,
                     )
 
-elif device == 891:
+if device == 890:
     print('start opt')
     for studyNR in [
                     # 1,
@@ -1298,39 +1271,41 @@ elif device == 891:
                     # 5,
                     # 100,
                     # 105,
-                    200, # l+r+num
-                    # 201, # l+r+num
-                    # 210, # l+r+LTP -> gibt alles auch einzeln (211-214)
-                    # 220, # num+method
-                    # 221, # num+L+method
-                    # 230, # num+L
+                    200,
+                    201,
+                    # 210, # liegt am PC0
+                    # 211, # liegt am PC0+27
+                    # 220, # liegt am PC27
+                    # 224, # liegt am PC27
+                    # 225, # liegt am PC27
+                    # 226, # liegt am PC27
                   ]:
         for seedNr in [1,2,3]:
             fct_opt(study           = studyNR,
                     RUN_DEVICE      = device,
                     seed            = seedNr,
                     ALGORITHMs      = (
+                                        'PSO',
+                                        'DE',
                                       'GA',
-                                      'DE',
-                                      # 'ISRES',
-                                      # 'MixedVariableGA',
-                                      'PSO',
+                                      'ISRES',
+                                      'MixedVariableGA',
                                       # 'PatternSearch',
                                       # 'grid',
                                       ),
                     RUN_COMPalgo    = False,
-                    RUN_COMPplot    = False,
+                    RUN_COMPplot    = True,
                     RUN_GRID        = False,
                     RUN_GRIDplot    = True,
                     RUN_PLOTcost    = True,
                     RUN_PLOTcons    = True,
                     RUN_PLOTboth    = True,
                     RUN_PLOTpara    = True,
-                    RUN_PLOTgrid    = False,
+                    RUN_PLOTgrid    = True,
                     RUN_PLOTstat    = True,
                     )
 
-elif device == 89:
+if device == 89:
     print('start opt')
     for studyNR in [
                     # 1,
@@ -1340,19 +1315,24 @@ elif device == 89:
                     # 100,
                     # 105,
                     # 200,
-                    201,
-                    # 210
+                    # 201,
+                    # 210, # liegt am PC0
+                    211, # liegt am PC0+27
+                    # 220, # liegt am PC27
+                    # 224, # liegt am PC27
+                    # 225, # liegt am PC27
+                    # 226, # liegt am PC27
                   ]:
-        for seedNr in [1,2,3]:
+        for seedNr in [2,3,1]:
             fct_opt(study           = studyNR,
                     RUN_DEVICE      = device,
                     seed            = seedNr,
                     ALGORITHMs      = (
+                                        'PSO',
+                                        'DE',
                                       'GA',
-                                      'DE',
-                                      # 'ISRES',
+                                      'ISRES',
                                       # 'MixedVariableGA',
-                                      'PSO',
                                       # 'PatternSearch',
                                       # 'grid',
                                       ),
@@ -1368,22 +1348,23 @@ elif device == 89:
                     RUN_PLOTstat    = False,
                     )
 
-elif device == 0: # reference study
+if device == 0: # reference study
     print('start opt')
-    for seedNr in [3]:
-        for studyNR in [210]:
+    for seedNr in [1,2,3]:
+        for studyNR in [211]:
             fct_opt(study           = studyNR,
                     seed            = seedNr,
                     RUN_DEVICE      = device,
-                    RUN_COMPalgo    = True,
-                    RUN_COMPplot    = False,
-                    RUN_GRID        = False,
-                    RUN_GRIDplot    = False,
-                    RUN_PLOTcost    = False,
-                    RUN_PLOTcons    = False,
-                    RUN_PLOTboth    = False,
-                    RUN_PLOTpara    = False,
-                    RUN_PLOTgrid    = False,
+                      RUN_COMPalgo    = True,
+                      RUN_COMPplot    = False,
+                      RUN_GRID        = False,
+                      RUN_GRIDplot    = False,
+                      RUN_PLOTcost    = False,
+                      RUN_PLOTcons    = False,
+                      RUN_PLOTboth    = False,
+                      RUN_PLOTpara    = False,
+                      RUN_PLOTgrid    = False,
+                      RUN_PLOTstat    = False,
                     )
 
 ###############################################################################

@@ -315,7 +315,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            ),
                               )
             # 211: nur LTP-Dicke
-            elif study == 211:
+            elif study == 2110:
                 DESIGN.update(RUN_PATH_MAIN = f'Opt_Yasser211_seed{seed}',
                               vary = ('ltp',),
                               bounds = dict(ltp = (0.0, 1.75),),
@@ -363,6 +363,23 @@ def fct_opt(study           = 0, # 0 = no output
             # 210: Säulenlänge, Radius und LTP-Dicke
             elif study == 210:
                 DESIGN.update(RUN_PATH_MAIN = f'Opt_Yasser210_seed{seed}',
+                              vary = ('si_L', 'si_R', 'ltp'),
+                              bounds = dict(si_L = (6.0,  25.0),
+                                            si_R = (0.50, 0.75),
+                                            ltp  = (0.0,  1.75),
+                                            ),
+                              scales = dict(si_L = 20,
+                                            si_R = 100,
+                                            ltp  = 40,),
+                              fixed = dict(si_method = 'VR_Yasser',
+                                           si_num    = si_num_ref,
+                                           slab      = SLABthickness,
+                                           si_E      = si_E_ref,
+                                           ),
+                              )
+            elif study == 211:
+                settlDEFAULT = 0.047  # plaxis
+                DESIGN.update(RUN_PATH_MAIN = f'Opt_Yasser211_seed{seed}',
                               vary = ('si_L', 'si_R', 'ltp'),
                               bounds = dict(si_L = (6.0,  25.0),
                                             si_R = (0.50, 0.75),
@@ -583,7 +600,9 @@ def fct_opt(study           = 0, # 0 = no output
                                             'evolution',
                                             'cost_settlement',
                                             'parallel',
-                                            'method_ranges'))
+                                            'best_feasible',
+                                            'method_ranges',
+                                            ))
             output = tuple(output)
             _, pathAlgo, _ = opt_algo(pathFolder  = pathFolder,
                                       dimension    = dimension,
@@ -623,6 +642,7 @@ def fct_opt(study           = 0, # 0 = no output
                                         'evolution',
                                         'cost_settlement',
                                         'parallel',
+                                        'best_feasible',
                                         'method_ranges'))
         output = tuple(output)
         # print(output)
@@ -768,7 +788,8 @@ def fct_opt(study           = 0, # 0 = no output
                                           filename          = filename,
                                           save              = True,
                                           )
+            
         plot_optimization_statistics(RUN_DEVICE, DESIGN["RUN_PATH_MAIN"])
 
 if __name__ == "__main__":
-    fct_opt(device=89)
+    fct_opt(RUN_DEVICE=89)
