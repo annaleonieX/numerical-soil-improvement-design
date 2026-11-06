@@ -72,7 +72,7 @@ def fct_modelParamsPaper(soil,
         if raster       is None: raster = 'triangular'
         if ltp_height   is None: ltp_height = 0.0 if is_sc else 0.4
         if slab_height  is None: slab_height = 0.5
-        if ref_height   is None: ref_height = ltp_height + slab_height  # SI head z=0
+        if ref_height   is None: ref_height = ltp_height + slab_height
         if line_load    is None: line_load = 120.0
         if water_depth  is None: water_depth = 0.0  # ground level WATER
         if paramsX is None:
@@ -85,14 +85,15 @@ def fct_modelParamsPaper(soil,
                        else paramsX)
         if meshRef    is None: meshRef = 'fineMedium'  # assumption
         if si_numberx is None: si_numberx = max(1, round(paramsX/spacing) - 1)
-        if si_numbery is None: si_numbery = si_numberx  # assumption: square grid
+        if si_numbery is None: si_numbery = si_numberx  # for square grid
         if si_numberx < 1 or si_numbery < 1:
             raise ValueError('Nguyen: si_numberx/si_numbery must be positive')
         if disx is None: disx = paramsX / (si_numberx + 1)
         if disy is None: disy = paramsY / (si_numbery + 1)
         if (abs(disx * (si_numberx + 1) - paramsX) > 1e-8 or
             abs(disy * (si_numbery + 1) - paramsY) > 1e-8):
-            raise ValueError('Nguyen: spacing must equal slab width / (si_num + 1)')
+            raise ValueError('Nguyen: spacing must equal '
+                             'slab width / (si_num + 1)')
         calc_layers = [7.0, 4.0, 4.0, 15.0]
         soil_material = [{'Name':       'Soil_Nguyen_Layer_1',
                           'Model':      'MC',  # assumption

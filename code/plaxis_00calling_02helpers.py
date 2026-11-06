@@ -90,14 +90,12 @@ def fct_adjustFontForPrint(fig,
                            width_cm    = 15,
                            min_font_pt = 7):
     from matplotlib.text import Text
-    pad_inches = 0.1  # Standardabstand bei bbox_inches='tight'
+    pad_inches = 0.1
     target_width_in = width_cm / 2.54
     for _ in range(8):
         fig.canvas.draw()
-        # Tatsächliche PDF-Breite inklusive Achsenbeschriftung und Legenden
         bbox = fig.get_tightbbox(fig.canvas.get_renderer())
         pdf_width_in = bbox.width + 2 * pad_inches
-        # Skalierung beim Einfügen mit width=15cm
         scale = target_width_in / pdf_width_in
         texts = [obj
                  for obj in fig.findobj(match=Text)
@@ -111,9 +109,6 @@ def fct_adjustFontForPrint(fig,
         factor = min_font_pt / smallest_print_font
         for obj in texts:
             obj.set_fontsize(obj.get_fontsize() * factor)
-    # print("7 pt bei 15 cm nicht erreichbar: "
-    #     "Abbildung oder außenstehende Legenden sind zu breit. "
-    #     "Plot aufteilen oder Legendentexte umbrechen.")
 
 def fct_formatSave(save, fig, path, name,
                    pad=None):
@@ -187,13 +182,12 @@ def fct_setPlotstyle(case=0, flat=False, r=4, colorMap=False):
         colors = np.array(colors)
         if colors.ndim != 2 or colors.shape[1] not in [3, 4]:
             raise ValueError(f"Invalid color shape: {colors.shape}")
-        colors = colors.tolist()  # <- WICHTIG: sauber als Liste von RGBA tuples
+        colors = colors.tolist()  # list of RGBA tuples
         colors = LinearSegmentedColormap.from_list("my_cmap", colors, N=256)
     return (markers, colors)
 
 def fct_sortKey(name):
     import re
-
     s = name.lower()
     if   "coarse" in s and "medium" not in s:                      quality = 0
     elif "mediumcoarse" in s:                                      quality = 1
@@ -201,13 +195,11 @@ def fct_sortKey(name):
     elif "finemedium" in s:                                        quality = 3
     elif "fine" in s and "medium" not in s:                        quality = 4
     else:                                                          quality = 5
-
     if s.endswith("full3"):                                        geom = 0
     elif s.endswith("quarter3"):                                   geom = 1
     elif s.endswith("unitcell3"):                                  geom = 2
     elif s.endswith("unitcell2"):                                  geom = 3
     else:                                                          geom = 99
-
     # natural = [int(t)
     #            if t.isdigit() else t
     #            for t in re.split(r"(\d+)", s)]
@@ -290,8 +282,11 @@ def fct_writeRuntime(path, runtime, section='0', accuracy='full'):
             # parse block content
             while i < len(lines) and lines[i].strip() != '':
                 if "runtime_seconds" in lines[i]:
-                    try: existing_runtime = float(re.findall(r"[-+]?\d*\.\d+|\d+",
-                                                             lines[i])[0])
+                    try: existing_runtime = float(
+                        re.findall(r"[-+]?\d*\.\d+|\d+",
+                                   lines[i]
+                                   )[0]
+                        )
                     except Exception: pass
                 i += 1
             # Skip all lines until an empty line is reached

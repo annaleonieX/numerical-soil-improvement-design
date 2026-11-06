@@ -12,7 +12,7 @@ dpiDefault        = 900 # most figures
 internalTesting   = False # surfIG (i      v1       v2      sig         w)
 printDistribution = True # surfIG for plot_pointsDistribution3D
 digitsDefault     = 3 # prepareGrid for surfIG (how many digits)
-CM_PER_INCH = 2.54
+CM_PER_INCH       = 2.54
 
 ###############################################################################
 #---------------------------------- IMPORTS -----------------------------------
@@ -659,7 +659,8 @@ def fct_classify_interface(g_o, phase, interfaces, center, radius,
                                                  g_o.ResultTypes.Interface.Y))
                     y = y.astype(float)
             except:
-                if testing:print('fct_classify_interface not possible due to STRING')
+                if testing:print('fct_classify_interface not '
+                                 'possible due to STRING')
                 traceback.print_exc()
                 return None, None
             if is_3D:
@@ -1613,7 +1614,8 @@ def fct_calc3D_controlData(v1,v2,sig, v2o=None,
         # print(duplicates_idx)
         if duplicates_idx:
             if internalTesting:
-                print(f'The searched duplicated positions are\n{duplicates_idx}.')
+                print(f'The searched duplicated positions '
+                      'are\n{duplicates_idx}.')
             # delete douple points for quarter or half
             mask = np.ones(len(v1), dtype=bool)
             mask[duplicates_idx] = False
@@ -1756,7 +1758,6 @@ def fct_prepareGrid(v1, v2, sig, v2o,
         print(f'v1_num: {v1_num}')
         print(f'v2_num: {v2_num}')
     return (v1, v2, sig, v1_uni, v2_uni, v1_num, v2_num, v2o)
-# (v1, v2, sig, v1_uni, v2_uni, v1_num, v2_num, v2_orig) = fct_prepareGrid(v1, v2, sig)
 
 def fct_closeCircle(val, theta, sig,
                     digits=digitsDefault,
@@ -2067,12 +2068,6 @@ def fct_plateMoment(g_o, g_i,
                     si_r = 1):
     if phase >= phaseSlab:
         try:
-            # print('INPUT PLATE:', plateI.Name.value)
-            # print('OUTPUT PLATES:', len(g_o.Plates))
-            # for plate in g_o.Plates:
-            #     print('OUTPUT PLATE:', plate.Name.value)
-            #     for plate_part in plate:
-            #         print('OUTPUT PLATE INNER:', plate_part.Name.value)
             version = 1
             if version == 1:
                 plO = next((plate_part
@@ -2190,9 +2185,9 @@ if __name__ == "__main__":
     phase = 10
     modeltyp = 'unitcell3'
     _, _, path = open_plaxisData(device,
-                                 'spacer',
-                                 os.path.join('Optimization - 2026-09-26 - Sensitivity Study')
-                                 )
+                 'spacer',
+                 os.path.join('Optimization - 2026-09-26 - Sensitivity Study')
+                 )
     cases = [
              (#0
                  'soil', 'Rectangle',#fig4.33

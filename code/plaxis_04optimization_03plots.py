@@ -845,16 +845,27 @@ def plot_best_feasible(paths,
     return results, groups
 
 # Shared publication labels for both best-feasible plots.
-BEST_FEASIBLE_INFO = {
-    "cost": (r"$C$", "Costs [€]", "€"),
-    "slab_t": (r"$t_{\mathrm{slab}}$", r"Slab thickness $t_{\mathrm{slab}}$ [m]", "m"),
-    "ltp_t": (r"$t_{\mathrm{LTP}}$", r"LTP thickness $t_{\mathrm{LTP}}$ [m]", "m"),
-    "si_num": (r"$a_x$", r"Piles per row $a_x$ [-]", ""),
-    "si_L": (r"$L$", "SI length $L$ [m]", "m"),
-    "si_R": (r"$r_{\mathrm{SI}}$", r"SI radius $r_{\mathrm{SI}}$ [m]", "m"),
-    "si_E": (r"$E_{\mathrm{SI}}$", r"SI stiffness $E_{\mathrm{SI}}$ [kPa]", "kPa"),
-    "si_method": (r"$M$", r"SI method $M$ [-]", ""),
-}
+BEST_FEASIBLE_INFO = {"cost":       (r"$C$", "Costs [€]", "€"),
+                      "slab_t":     (r"$t_{\mathrm{slab}}$",
+                                     r"Slab thickness $t_{\mathrm{slab}}$ [m]",
+                                     "m"),
+                      "ltp_t":      (r"$t_{\mathrm{LTP}}$",
+                                     r"LTP thickness $t_{\mathrm{LTP}}$ [m]",
+                                     "m"),
+                      "si_num":     (r"$a_x$", r"Piles per row $a_x$ [-]",
+                                     ""),
+                      "si_L":       (r"$L$", "SI length $L$ [m]",
+                                     "m"),
+                      "si_R":       (r"$r_{\mathrm{SI}}$",
+                                     r"SI radius $r_{\mathrm{SI}}$ [m]",
+                                     "m"),
+                      "si_E":       (r"$E_{\mathrm{SI}}$",
+                                     r"SI stiffness $E_{\mathrm{SI}}$ [kPa]",
+                                     "kPa"),
+                      "si_method":  (r"$M$",
+                                     r"SI method $M$ [-]",
+                                     ""),
+                      }
 
 def _param_label(param):
     if param in BEST_FEASIBLE_INFO:
@@ -901,14 +912,15 @@ def _axis_limits(values, n_intervals=4, quantum=0.01, padding=0.45):
     power = 10.0 ** np.floor(np.log10(required))
     for _ in range(30):
         for leading in (1, 2, 2.5, 5, 10):
-            step = max(quantum, np.ceil(leading * power / quantum - 1e-10) * quantum)
+            step = max(quantum,
+                       np.ceil(leading * power / quantum - 1e-10) * quantum)
             lower = np.floor(lo / step + 1e-10) * step
             upper = lower + n_intervals * step
-            if step >= required * (1 - 1e-10) and upper >= hi - quantum * 1e-8:
+            if (step >= required * (1 - 1e-10) and
+                upper >= hi - quantum * 1e-8):
                 return lower, upper, lower + np.arange(n_intervals + 1) * step
         power *= 10
     raise ValueError("Unable to construct finite axis limits")
-
 
 def _format_best_axis(axis, param, values, padding=0.45):
     """Format raw coordinates; scaling affects tick labels only."""
@@ -922,11 +934,14 @@ def _format_best_axis(axis, param, values, padding=0.45):
     scale = 10.0 ** exponent
     decimals = 2 if unit == "m" else 0
     quantum = 10.0 ** (-decimals)
-    lo, hi, ticks = _axis_limits(finite / scale, quantum=quantum, padding=padding)
+    lo, hi, ticks = _axis_limits(finite / scale,
+                                 quantum=quantum,
+                                 padding=padding)
     axis.set_ylim(lo * scale, hi * scale)
     axis.set_yticks(ticks * scale)
     axis.yaxis.set_major_formatter(FuncFormatter(
-        lambda value, _, scale=scale, decimals=decimals: f"{value / scale:.{decimals}f}"))
+        lambda value, _, scale=scale, decimals=decimals:
+            f"{value / scale:.{decimals}f}"))
     axis.yaxis.offsetText.set_visible(False)
     old = getattr(axis, "_engineering_text", None)
     if old is not None:
@@ -944,7 +959,6 @@ def _format_best_axis(axis, param, values, padding=0.45):
             1 if right else 0, 1.02, rf"$\times 10^{{{exponent}}}$",
             transform=transform, ha="left", va="bottom", clip_on=False)
 
-
 def _best_feasible(paths,
                    save_path,
                    filename,
@@ -958,7 +972,6 @@ def _best_feasible(paths,
                    labels=None):
     """
     Plot and LaTeX table of the best feasible design for each optimisation run.
-
     The plot groups optimisation runs by algorithm. Within each algorithm,
     individual bars represent different parameter variations.
     """
@@ -967,7 +980,6 @@ def _best_feasible(paths,
     import pandas as pd
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
-    from matplotlib.ticker import FuncFormatter
     paths = ([paths]
              if isinstance(paths, (str, os.PathLike))
              else list(paths)
@@ -1051,9 +1063,9 @@ def _best_feasible(paths,
     #                      "because cost uses the first of the three y-axes."
     #                      )
     n_bars = len(plot_params)
-    algorithm_col = ("algorithm"
-                     if "algorithm" in best_df.columns
-                     else "run")
+    # algorithm_col = ("algorithm"
+    #                  if "algorithm" in best_df.columns
+    #                  else "run")
     algorithms = best_df["display_run"].astype(str).tolist()
     n_algorithms = len(algorithms)
     # fig, ax_cost = plt.subplots(figsize=(DEF_figWidth,
@@ -1072,7 +1084,6 @@ def _best_feasible(paths,
                         right   = (left_margin + plot_width) / fig_width,
                         bottom  = 0.24,
                         top     = 0.94)
-
     axes = [ax_cost]
     for axis_index in range(1, n_bars):
         axis = ax_cost if axis_index == 0 else ax_cost.twinx()
@@ -1095,7 +1106,6 @@ def _best_feasible(paths,
                          right      = True,
                          labelleft  = False,
                          labelright = True)
-
     plot_values = {}
     category_names = {}
     for param in plot_params:
@@ -1208,7 +1218,6 @@ def _best_feasible(paths,
                    ncol=min(n_bars, 6),
                    frameon=False,
                    fontsize=8)
-
     # Measure the rotated text at the final layout. If necessary, increase
     # the upper limits of ALL axes by the same factor to retain grid alignment.
     for _ in range(8):
@@ -1245,12 +1254,11 @@ def _best_feasible(paths,
     fig.savefig(image_path, format="pdf", bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
     # Additional 15 cm, axis-free comparison. The original figure remains.
-    compact_path = _best_feasible_compact(best_df, plot_params, category_names,
-                                         save_path, filename)
+    # compact_path = _best_feasible_compact(best_df, plot_params, category_names,
+    #                                      save_path, filename)
 
     table_df = best_df.drop(columns=["_variation", "_order", "display_run"],
                             errors="ignore").copy()
-
     def _tex_cell(value, parameter):
         if pd.isna(value):
             return "---"
@@ -1262,13 +1270,10 @@ def _best_feasible(paths,
                          .replace("_", r"\_") \
                          .replace("&", r"\&") \
                          .replace("%", r"\%")
-
     for col in table_df.columns:
         table_df[col] = table_df[col].map(lambda value, c=col: _tex_cell(value, c))
-
     table_df = table_df.rename(columns={col: LABELS.get(col, col)
                                          for col in table_df.columns})
-
     table_path = os.path.join(save_path,
                               f'{os.path.splitext(table_filename)[0]}.tex'
                               )
@@ -1651,7 +1656,6 @@ def plot_parallel_coordinates(paths,
 
 def _find_sibling_seed_runs(path):
     """Discover every algorithm/seed run belonging to the current study.
-
     Examples: Opt_Yasser210_seed1_GA, Opt_Yasser210_seed2_DE,
     Opt_Yasser210_seed3_comparison. Only folders with CSV histories are used.
     """
@@ -1659,7 +1663,10 @@ def _find_sibling_seed_runs(path):
     parent, basename = os.path.split(folder)
     match = re.search(r"seed[_-]?(\d+)(?=[_-]|$)", basename, re.I)
     if match is None:
-        return [folder] if os.path.isfile(os.path.join(folder, "optimization_history.csv")) else []
+        return ([folder]
+                if os.path.isfile(os.path.join(folder,
+                                               "optimization_history.csv"))
+                else [])
     prefix = basename[:match.start()]
     candidates = []
     for name in os.listdir(parent):
@@ -1668,11 +1675,15 @@ def _find_sibling_seed_runs(path):
             continue
         m = re.fullmatch(re.escape(prefix) + r"seed[_-]?(\d+)(?:[_-].*)?",
                          name, re.I)
-        if m is None or not os.path.isfile(os.path.join(candidate, "optimization_history.csv")):
+        if (m is None or
+            not os.path.isfile(os.path.join(candidate,
+                                            "optimization_history.csv"))):
             continue
         candidates.append((int(m.group(1)), candidate))
-    return [candidate for _, candidate in sorted(candidates, key=lambda row: (row[0], row[1].lower()))]
-
+    return [candidate for _, candidate in sorted(candidates,
+                                                 key=lambda row:
+                                                     (row[0],
+                                                      row[1].lower()))]
 
 def _best_feasible_valid_paths(paths):
     """Keep individual runs that have at least one successful feasible cost."""
@@ -1690,7 +1701,6 @@ def _best_feasible_valid_paths(paths):
         else:
             print('Best feasible: no valid feasible result:', folder)
     return result
-
 
 def opt_plot(path, requested, cfg):
     fct_setPlottext()
@@ -1744,7 +1754,10 @@ def opt_plot(path, requested, cfg):
                 # A CSV normally contains only one algorithm. Avoid duplicating
                 # mixed-algorithm CSV folders in several individual plots.
                 if all(_read(f)['algorithm'].nunique() == 1 for f in algo_paths):
-                    print('Best feasible algorithm:', algorithm, len(algo_paths), 'runs')
+                    print('Best feasible algorithm:',
+                          algorithm,
+                          len(algo_paths),
+                          'runs')
                     outputs['best_feasible'][algorithm] = plot_best_feasible(
                         algo_paths, shared_save_path)
             print('Best feasible combined:', len(seed_paths), 'runs')
@@ -1769,7 +1782,7 @@ def opt_plot(path, requested, cfg):
 # BEST FEASIBLE POINTS
 
 def _short_folder_labels(names):
-    """Gemeinsamen Anfang und gemeinsames Ende entfernen."""
+    """ same start and end clearance"""
     names = [str(name) for name in names]
     if (len(names) < 2 or
         len(set(names)) != len(names)):
@@ -1808,8 +1821,10 @@ def read_best_feasible_tables(paths,
             file = path / table_filename
             if not file.is_file():
                 matches = sorted(path.glob("*_" + table_filename))
-                if not matches and table_filename == "optimization_best_feasible.tex":
-                    matches = sorted(path.glob("*_optimization_best_feasible_all.tex"))
+                if (not matches and
+                    table_filename == "optimization_best_feasible.tex"):
+                    matches = sorted(path.glob("*_optimization_best"
+                                               "_feasible_all.tex"))
                 if len(matches) != 1:
                     raise ValueError(
                         f"Keine eindeutige Tabelle in:\n{path}\n"
@@ -1848,36 +1863,33 @@ def read_best_feasible_tables(paths,
             or any(len(row) != len(rows[0])
                    for row in rows)):
             raise ValueError(f"Ungültige oder leere Tabelle:\n{file}")
-        columns = [
-            column if column == "run" and "algorithm" in rows[0]
-            else aliases.get(column, column)
-            for column in rows[0]
-            ]
+        columns = [column
+                   if column == "run" and "algorithm" in rows[0]
+                   else aliases.get(column, column)
+                   for column in rows[0]
+                   ]
         from collections import Counter
-        duplicates = {
-            name: count
-            for name, count in Counter(columns).items()
-            if count > 1
-            }
+        duplicates = {name: count
+                      for name, count in Counter(columns).items()
+                      if count > 1
+                      }
         if duplicates:
-            print(f"Datei: {file}")
-            print(f"Originale Spalten: {rows[0]}")
-            print(f"Spalten nach aliases: {columns}")
-            print(f"Doppelte Spalten: {duplicates}")
+            print(f"file: {file}")
+            print(f"original column: {rows[0]}")
+            print(f"column regarding aliases: {columns}")
+            print(f"column twice: {duplicates}")
         if len(set(columns)) != len(columns):
-            raise ValueError(f"Doppelte Spaltennamen:\n{file}")
+            raise ValueError(f"columnname twice:\n{file}")
         data = pd.DataFrame(rows[1:], columns=columns,)
         if "algorithm" not in data:
-            raise ValueError(f"Spalte 'run' fehlt:\n{file}")
+            raise ValueError(f"column 'run' missing:\n{file}")
         data["algorithm"] = data["algorithm"].str.replace("MixedVariableGA",
                                                           "MVGA",
                                                           case=False,
                                                           regex=False,
                                                           )
         if data["algorithm"].duplicated().any():
-            raise ValueError(
-                f"Mehrere Zeilen für denselben Algorithmus:\n{file}"
-                )
+            raise ValueError("multiple rows for the same algo:\n{file}")
         # Convert to numbers only if ALL non-missing entries are numeric.
         # Otherwise preserve the original text (e.g. si_method = "VR").
         for column in data.columns.drop("algorithm"):
@@ -1898,31 +1910,27 @@ def read_best_feasible_tables(paths,
     return pd.concat(frames, ignore_index=True, sort=False,)
 
 def _prepare_plot_axis(data, parameter):
-    """Numeric series or category positions; category names if categorical.
-
+    """
+    Numeric series or category positions; category names if categorical.
     Conversion is column-wide: all valid values must be numeric to use a
     numeric axis.  In particular, method names are never lost through coerce.
     """
     if parameter not in data.columns:
         raise ValueError(f"Parameter '{parameter}' not found.")
-
     values = data[parameter].astype("string").str.strip()
     values = values.mask(values.isin(["", "-", "--", "---", "nan", "NaN",
                                     "None", "<NA>"]))
     valid = values.notna()
     if not valid.any():
-        raise ValueError(f"Keine gültigen Werte für '{parameter}' gefunden.")
-
+        raise ValueError(f"Parameter '{parameter}' not found.")
     numeric = pd.to_numeric(values, errors="coerce")
     numeric = numeric.replace([np.inf, -np.inf], np.nan)
     if numeric[valid].notna().all():
         return numeric.astype(float), None
-
     categories = list(dict.fromkeys(values[valid].tolist()))
     mapping = {value: i for i, value in enumerate(categories)}
     positions = values.map(mapping).astype(float)
     return positions, categories
-
 
 def plot_best_feasible_points(paths,
                               save_path=None,
@@ -1941,7 +1949,7 @@ def plot_best_feasible_points(paths,
     x = parameter_aliases.get(x, x)
     y = parameter_aliases.get(y, y)
     if x == y:
-        raise ValueError("x und y müssen unterschiedlich sein.")
+        raise ValueError("x and y have to be different")
     plot_x, categories_x = _prepare_plot_axis(data, x)
     plot_y, categories_y = _prepare_plot_axis(data, y)
     algorithms = list(dict.fromkeys(data["algorithm"]))
@@ -1952,7 +1960,7 @@ def plot_best_feasible_points(paths,
     colors = fct_setPlotstyle(case=0, flat=True, r=1,)[1]
     markers = ["o", "s", "^", "D", "v", "P","X", "<", ">", "h", "*", "p",]
     if len(studies) > len(markers):
-        raise ValueError(f"Maximal {len(markers)} Ordner unterstützt.")
+        raise ValueError(f"max {len(markers)} folderlen.")
     color_map = {algorithm: colors[i % len(colors)]
                  for i, algorithm in enumerate(algorithms)
                  }
@@ -2039,16 +2047,12 @@ def plot_best_feasible_points(paths,
 ### STATISTICS
 
 def _stat_termination(history, settings):
-    """Am letzten CSV-Eintrag erfüllte Terminierungsbedingungen."""
-    if not settings:
-        return "unknown"
-
+    if not settings: return "unknown"
     n = len(history)
     budget = settings.get("calcSize")
     reached_budget = budget is not None and n >= int(budget)
     window = int(settings.get("stop_window") or 0)
     stagnated = False
-
     if window and n > window:
         feasible = history["feasible"]
         costs = pd.to_numeric(history["cost"], errors="coerce")
@@ -2065,7 +2069,6 @@ def _stat_termination(history, settings):
                 cv = (tail.apply(pd.to_numeric, errors="coerce")
                       .clip(lower=0).fillna(0).sum(axis=1))
                 stagnated = cv.max() - cv.min() <= tolerance
-
     reasons = []
     if reached_budget:
         reasons.append("Budget")

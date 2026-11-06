@@ -45,28 +45,36 @@ from plaxis_00calling_02helpers import (fct_setPlotstyle,
                                         fct_sortKey,
                                         fct_mathLabel)
 
+CATEGORY_FAMILIES = ['ltp', 'dis', 'load', 'slab', 'esi', 'e', 'sinum']
 # Publication settings: input data remain F_...; display labels use R_....
-DEFAULT_MODEL_SETTINGS = {
-    'siNum': 7, 'qd': 100.0, 'tslab': 0.3,
-    'tLTP': 0.5, 's': 1.5, 'ESI': 100000.0,  # ESI in kPa
-}
-
-# The reference/simplified-model defaults apply to any model category
+DEFAULT_MODEL_SETTINGS = {'siNum':      7,
+                          'qd':         100.0,
+                          'tslab':      0.3,
+                          'tLTP':       0.5,
+                          's':          1.5,
+                          'ESI':        100000,
+                          }
+# The simplified-model defaults apply to any model category
 # containing "ref" (case-insensitive), including siNumRef and ltp1siNumRef.
-SIMPLIFIED_MODEL_SETTINGS = {
-    **DEFAULT_MODEL_SETTINGS,
-    'qd': 450.0, 'tslab': 2.50, 'tLTP': 0.00, 's': 3.00,
-    'rSI': 0.35, 'si_L': 12.0, 'soil_depth': 24.0,
-    'soil_profile': 'homogeneous single layer',
-    'slab_interface': False,
-}
-BASE_MODEL_SETTINGS = {
-    **DEFAULT_MODEL_SETTINGS,
-    'rSI': 0.30, 'si_L': 9.0,
-    'soil_depth': None,  # Model-dependent
-    'soil_profile': 'multi-layered',
-    'slab_interface': True,
-}
+SIMPLIFIED_MODEL_SETTINGS = {**DEFAULT_MODEL_SETTINGS,
+                             'qd':          450.0,
+                             'tslab':       2.50,
+                             'tLTP':        0.00,
+                             's':           3.00,
+                             'rSI':         0.35,
+                             'si_L':        12.0,
+                             'soil_depth':  24.0,
+                             'soil_profile': 'homogeneous single layer',
+                             'slab_interface': False,
+                             }
+# The reference-model defaults apply to any model category
+BASE_MODEL_SETTINGS = {**DEFAULT_MODEL_SETTINGS,
+                       'rSI':               0.30,
+                       'si_L':              9.0,
+                       'soil_depth':        None,  # Model-dependent
+                       'soil_profile':      'multi-layered',
+                       'slab_interface':    True,
+                       }
 
 def fct_isSimplifiedModel(name):
     """Whether this model/category name contains 'ref'."""
@@ -101,7 +109,6 @@ def fct_stiffnessEngineering(value):
     mantissa = value / 10 ** exponent
     return f'{mantissa:g}e{exponent}'
 
-
 def fct_variedCategory(category):
     """Identify the varied quantity in compound model/folder categories."""
     c = re.sub('ref', '', str(category).split('_')[0].lower())
@@ -113,7 +120,6 @@ def fct_variedCategory(category):
         if c.startswith(prefix):
             return 'esi' if prefix in ('esi', 'e') else prefix
     return c
-
 
 def fct_categoryInfo(category):
     """English names and consistent units for the varied category."""
@@ -127,7 +133,8 @@ def fct_categoryInfo(category):
     if c in ('slab', 'tslab'):
         return 'Slab thickness [m]', 'slab thickness'
     if c == 'sinum': return 'Piles per row [-]', 'piles per row'
-    return str(category).replace('_', ' ').capitalize(), str(category).replace('_', ' ')
+    return (str(category).replace('_', ' ').capitalize(),
+            str(category).replace('_', ' '))
 
 
 def fct_categoryValue(category, number, defaults=DEFAULT_MODEL_SETTINGS):
@@ -155,8 +162,6 @@ def fct_positionLabel(suffix, useEdges=True):
     if not useEdges and value.lower() in ('edgex', 'edgey'):
         return 'Edge'
     return value
-
-CATEGORY_FAMILIES = ['ltp', 'dis', 'load', 'slab', 'esi', 'e', 'sinum']
 
 def _category_family_matches(family, token):
     family = family.lower()
@@ -216,7 +221,7 @@ def get_digit(number):
         return True
     except (ValueError, TypeError):
         return False
-    
+
 def find_maxPhase(path,
                   folder,
                   phaseDef=phaseDef):
@@ -1479,17 +1484,25 @@ def plot_resistanceMultiplePlot(path, models, category,
     all_F_sum = []
     counter = 0
     categoryShort = category.split('_')[0]
-    legend_category_title, variation_name, title_context = fct_categoryMeta(categoryShort)
+    (legend_category_title,
+     variation_name,
+     title_context) = fct_categoryMeta(categoryShort)
     n_models = len({fct_parseKey(key)[1] for key in models})
 
     for key, df in models.items():
         cat, number, dimension, suffix = fct_parseKey(key)
-        color, seen_numbers, counter = fct_getColor(colors, number, seen_numbers, counter, n_models)
+        color, seen_numbers, counter = fct_getColor(colors,
+                                                    number,
+                                                    seen_numbers,
+                                                    counter,
+                                                    n_models)
         marker, markersize = markers[int(dimension[-1])]
         linestyle, position = fct_setPlotline(key)
         style_group[fct_categoryValue(cat, number)] = color
         style_dim[dimension] = (marker, markersize)
-        position_label = '' if dimension in ('unitcell2', 'unitcell3') else fct_positionLabel(position, useEdges=True)
+        position_label = (''
+                          if dimension in ('unitcell2', 'unitcell3')
+                          else fct_positionLabel(position, useEdges=True))
         if position_label:
             style_pos[position_label] = linestyle
         style_pairs[(dimension, position_label)] = (linestyle, marker, markersize)
@@ -1508,23 +1521,34 @@ def plot_resistanceMultiplePlot(path, models, category,
         all_F_sum.extend(array_F_sum.tolist())
         all_u_y.extend(array_u.tolist())
 
-    fct_formatAxis(ax_rbase, all_F_base, all_u_y, xlabel='$R_{base}$ [kN]', xinv=True, ylabel='Settlement u [m]')
-    fct_formatAxis(ax_rshaft, all_F_shaft, all_u_y, xlabel='$R_{shaft}$ [kN]', xinv=True)
-    fct_formatAxis(ax_rsum, all_F_sum, all_u_y, xlabel='$R_{sum}$ [kN]', xinv=True)
+    fct_formatAxis(ax_rbase, all_F_base, all_u_y,
+                   xlabel='$R_{base}$ [kN]', xinv=True,
+                   ylabel='Settlement u [m]')
+    fct_formatAxis(ax_rshaft, all_F_shaft, all_u_y,
+                   xlabel='$R_{shaft}$ [kN]', xinv=True)
+    fct_formatAxis(ax_rsum, all_F_sum, all_u_y,
+                   xlabel='$R_{sum}$ [kN]', xinv=True)
     ax_rshaft.tick_params(axis='y', labelleft=False)
     ax_rsum.tick_params(axis='y', labelleft=False)
-
-    handles_groups = [Line2D([0], [0], color=color, linewidth=1.5, label=str(number))
+    handles_groups = [Line2D([0], [0],
+                             color=color,
+                             linewidth=1.5,
+                             label=str(number))
                       for number, color in style_group.items()]
-    handles_dimensions = [Line2D([0], [0], color='black', linestyle='None',
-                                 marker=marker, markersize=markersize, label=str(dimension))
+    handles_dimensions = [Line2D([0], [0],
+                                 color='black',
+                                 linestyle='None',
+                                 marker=marker,
+                                 markersize=markersize,
+                                 label=str(dimension))
                           for dimension, (marker, markersize) in style_dim.items()]
-    handles_positions = [Line2D([0], [0], color='black', linestyle=linestyle,
-                                linewidth=1.5, label=position_label)
+    handles_positions = [Line2D([0], [0],
+                                color='black',
+                                linestyle=linestyle,
+                                linewidth=1.5,
+                                label=position_label)
                          for position_label, linestyle in style_pos.items()]
-
     fig.suptitle(f'{UW}Resistance curves for the {variation_name} variation{title_context}')
-
     left_cm = 1.4
     right_cm = 4.0
     bottom_cm = 1.5
@@ -1544,15 +1568,21 @@ def plot_resistanceMultiplePlot(path, models, category,
         handles_combined = []
         for (dim, pos), (line, mark, size) in style_pairs.items():
             label = dim if not pos else f'{dim} – {pos}'
-            handles_combined.append(Line2D([0], [0], color='black', linestyle=line,
-                                           marker=mark, markersize=size,
-                                           linewidth=1.5, label=label))
+            handles_combined.append(Line2D([0], [0],
+                                           color='black',
+                                           linestyle=line,
+                                           marker=mark,
+                                           markersize=size,
+                                           linewidth=1.5,
+                                           label=label))
         legend_sets = ((legend_category_title, handles_groups),
-                       ('Dimension / position', handles_combined))
+                       ('Dimension / position', handles_combined)
+                       )
     else:
         legend_sets = ((legend_category_title, handles_groups),
                        ('Dimension', handles_dimensions),
-                       ('Position', handles_positions))
+                       ('Position', handles_positions)
+                       )
     for title, handles in legend_sets:
         if len(handles) > 0:
             legend = fct_formatLegend(fig, typ='handles', handles=handles,
@@ -1610,19 +1640,28 @@ def plot_resistanceBarPlot(path, models, category, phase, uw=uwDefault,
     dim_to_hatch = {}
     models = fct_sortModels(models)
     categoryShort = category.split('_')[0]
-    legend_category_title, variation_name, title_context = fct_categoryMeta(categoryShort)
+    (legend_category_title,
+     variation_name,
+     title_context) = fct_categoryMeta(categoryShort)
     n_models = len({fct_parseKey(key)[1] for key in models})
     for key, df in models.items():
         cat, number, dimension, suffix = fct_parseKey(key)
-        color, seen_numbers, counter = fct_getColor(colors, number, seen_numbers, counter, n_models)
+        color, seen_numbers, counter = fct_getColor(colors,
+                                                    number,
+                                                    seen_numbers,
+                                                    counter,
+                                                    n_models)
         if number not in legend_entries_color:
             legend_entries_color[number] = color
         if suffix not in dim_to_hatch:
-            dim_to_hatch[suffix] = hatch_list[len(dim_to_hatch) % len(hatch_list)]
+            dim_to_hatch[suffix] = hatch_list[len(dim_to_hatch) %
+                                              len(hatch_list)]
         hatch = dim_to_hatch[suffix]
         if suffix not in legend_entries_hatch:
             legend_entries_hatch[suffix] = hatch
-        phase_use = find_maxPhase(path, f'{cat}_{number}_{dimension}') if phase == -1 else phase
+        phase_use = (find_maxPhase(path, f'{cat}_{number}_{dimension}')
+                     if phase == -1
+                     else phase)
         df_phase = df[df['Phase'] == phase_use]
         if df_phase.empty:
             continue
@@ -1634,10 +1673,15 @@ def plot_resistanceBarPlot(path, models, category, phase, uw=uwDefault,
         values_sum.append(val_sum)
         bar_colors.append(color)
         bar_hatches.append(hatch)
-        labels.append(fct_dimensionPositionLabel(dimension, suffix, short_dim=True,
-                                                 separator='_', useEdges=False))
+        labels.append(fct_dimensionPositionLabel(dimension,
+                                                 suffix,
+                                                 short_dim=True,
+                                                 separator='_',
+                                                 useEdges=False)
+                      )
     if not labels:
-        print(f'No data {models.keys()} for phase {phase_use} for plot_resistanceBarPlot')
+        print(f'No data {models.keys()} for phase {phase_use} '
+              'for plot_resistanceBarPlot')
         return
 
     ax_rbase.set_title('Base resistance')
@@ -1657,10 +1701,14 @@ def plot_resistanceBarPlot(path, models, category, phase, uw=uwDefault,
     phase_text = ('the last phase' if phase == -1 else f'phase {phase}')
     fig.suptitle(f'{UW}Resistance Comparison for {phase_text}{title_context}')
 
-    handles_color = [Patch(facecolor=color, label=fct_categoryValue(categoryShort, number))
+    handles_color = [Patch(facecolor=color,
+                           label=fct_categoryValue(categoryShort, number))
                      for number, color in sorted(legend_entries_color.items(),
-                                                 key=lambda item: fct_sortKey(str(item[0])))]
-    handles_hatch = [fct_hatchLegendPatch(suf.lstrip('_') if suf else 'Unitcell', hatch)
+                                                 key=lambda item:
+                                                     fct_sortKey(str(item[0])))]
+    handles_hatch = [fct_hatchLegendPatch(suf.lstrip('_')
+                                          if suf
+                                          else 'Unitcell', hatch)
                      for suf, hatch in legend_entries_hatch.items()]
 
     left_cm = 1.4
@@ -1689,7 +1737,8 @@ def plot_resistanceBarPlot(path, models, category, phase, uw=uwDefault,
                        .transformed(fig.transFigure.inverted()).y0 - gap)
     pathFolder = os.path.join(path,
                               f"plot_variations_{category.split('_')[0]}",
-                              f"plot_variations_resistance_bar_p{phase}_{category.split('_')[1]}")
+                               "plot_variations_resistance_bar"
+                              f"_p{phase}_{category.split('_')[1]}")
     filename = fct_formatSave(save, fig, pathFolder,
                               f'Resistance_bar_{category}{uw}_p{phase}')
     return filename
@@ -1715,7 +1764,9 @@ def plot_resiRatiosSingle(path, suffix, df,
                           colors, markers, uw=uwDefault,
                           save=saveDefault, dpi=dpiDefault):
     uw, UW     = getUW(uw)
-    fig, ax    = plt.subplots(1, 1, figsize=(15/CM_PER_INCH, 4/CM_PER_INCH), dpi=dpi)
+    fig, ax    = plt.subplots(1, 1,
+                              figsize=(15/CM_PER_INCH, 4/CM_PER_INCH),
+                              dpi=dpi)
     all_Loads  = df['Load'].values
     all_LSRs   = df[f'LSR{uw}'].values
     all_RSRs   = df[f'RSR{uw}'].values
@@ -1774,8 +1825,9 @@ def plot_resiRatiosMultiplePlot(path, models, category,
     # Plot - General
     fig_width_cm  = 24.0
     fig_height_cm = 7.0
-    fig, axes = plt.subplots(1, 3, figsize=(fig_width_cm/CM_PER_INCH,
-                                            fig_height_cm/CM_PER_INCH),
+    fig, axes = plt.subplots(1, 3,
+                             figsize=(fig_width_cm/CM_PER_INCH,
+                                      fig_height_cm/CM_PER_INCH),
                              dpi=dpi)
     ax_lsr, ax_rsr, ax_sar = axes
     all_loads    = []
@@ -1783,7 +1835,9 @@ def plot_resiRatiosMultiplePlot(path, models, category,
     all_rsr      = []
     all_sar      = []
     categoryShort = category.split('_')[0]
-    legend_category_title, variation_name, title_context = fct_categoryMeta(categoryShort)
+    (legend_category_title,
+     variation_name,
+     title_context) = fct_categoryMeta(categoryShort)
     n_models = len({fct_parseKey(key)[1]
                     for key in models})
     # Track which legend labels were already added
@@ -1808,7 +1862,9 @@ def plot_resiRatiosMultiplePlot(path, models, category,
                           else fct_positionLabel(position, useEdges=False))
         if position_label:
             style_pos[position_label] = linestyle
-        style_pairs[(dimension, position_label)] = (linestyle, marker, markersize)
+        style_pairs[(dimension, position_label)] = (linestyle,
+                                                    marker,
+                                                    markersize)
         dimension_pos.setdefault(dimension, set()).add(position_label)
         all_Loads = df['Load'].values
         all_LSRs  = df[f'LSR{uw}'].values
@@ -1864,7 +1920,8 @@ def plot_resiRatiosMultiplePlot(path, models, category,
                        ylabel='SAR [-]',
                        )
     # settings
-    fig.suptitle(f'{UW}Ratio curves for the {variation_name} variation{title_context}')
+    fig.suptitle(f'{UW}Ratio curves for the {variation_name} '
+                 f'variation{title_context}')
     handles_groups = [Line2D([0], [0],
                              color=color,
                              linewidth=1.5,
@@ -1978,7 +2035,9 @@ def plot_resiRatiosBarPlot(path, models, category, phase,
     bar_hatches = []
     seen_numbers = {}
     categoryShort = category.split('_')[0]
-    legend_category_title, variation_name, title_context = fct_categoryMeta(categoryShort)
+    (legend_category_title,
+     variation_name,
+     title_context) = fct_categoryMeta(categoryShort)
     counter = 0
     hatch_list = ['', '/', '.', 'x', '\\\\', '+', '-']
     suffix_to_hatch = {'': ''}
@@ -1991,12 +2050,14 @@ def plot_resiRatiosBarPlot(path, models, category, phase,
         cat, number, dimension, suffix = fct_parseKey(key)
         if suffix.lower() == '_edgex':
             continue
-        color, seen_numbers, counter = fct_getColor(colors, number,
+        color, seen_numbers, counter = fct_getColor(colors,
+                                                    number,
                                                     seen_numbers,
-                                                    counter, n_models)
+                                                    counter,
+                                                    n_models)
         if number not in legend_entries_color:
             legend_entries_color[number] = color
-        # Schraffur nach Position/Suffix, unabhängig von der Dimension
+        # hatch regarding position not dimension
         if suffix not in suffix_to_hatch:
             suffix_to_hatch[suffix] = hatch_list[
                 1 + (len(suffix_to_hatch) - 1) % (len(hatch_list) - 1)]
@@ -2008,7 +2069,9 @@ def plot_resiRatiosBarPlot(path, models, category, phase,
         else: phase_use = phase
         df_phase = df[df['Phase'] == phase_use]
         if df_phase.empty: continue
-        legend_entries_hatch[fct_positionLabel(suffix, useEdges=False)] = hatch
+        legend_entries_hatch[fct_positionLabel(suffix,
+                                               useEdges=False)
+                             ] = hatch
         val_lsr = df_phase[f'LSR{uw}'].values[0]
         val_rsr = df_phase[f'RSR{uw}'].values[0]
         val_sar = df_phase[f'SAR{uw}'].values[0]
@@ -2017,8 +2080,12 @@ def plot_resiRatiosBarPlot(path, models, category, phase,
         values_sar.append(val_sar)
         bar_colors.append(color)
         bar_hatches.append(hatch)
-        position_name = fct_positionLabel(suffix, useEdges=False) if suffix else ''
-        label = f'{number}_{dimension}' + (f'_{position_name}' if position_name else '')
+        position_name = (fct_positionLabel(suffix, useEdges=False)
+                         if suffix
+                         else '')
+        label = f'{number}_{dimension}' + (f'_{position_name}'
+                                           if position_name
+                                           else '')
         labels.append(label)
     if not labels:
         print(f'No data {models.keys()} for phase {phase} '
@@ -2064,11 +2131,13 @@ def plot_resiRatiosBarPlot(path, models, category, phase,
                        .transformed(fig.transFigure.inverted()).y0
                        - gap)
     phase_text = ('the last phase' if phase == -1 else f'phase {phase}')
-    fig.suptitle(f'{UW}Ratio Comparison for {phase_text}{title_context}', y=0.98)
+    fig.suptitle(f'{UW}Ratio Comparison for {phase_text}{title_context}',
+                 y=0.98)
     pathFolder = os.path.join(
                  path,
                  f'plot_variations_{category.split('_')[0]}',
-                 f'plot_variations_ratios_bar_p{phase}_{category.split('_')[1]}',
+                  'plot_variations_ratios_bar_'
+                 f'p{phase}_{category.split('_')[1]}',
                  )
     filename = fct_formatSave(save, fig, pathFolder,
                               f'Ratios_bar_{category}{uw}_p{phase}')
@@ -2126,19 +2195,19 @@ def plot_XoverLoadPlot(path, models, key, category,
         df_plot = df.dropna(subset=[output[0], 'Load'])
         if df_plot.empty: continue
         cat, number, dimension, _ = fct_parseKey(model_key)
-        # Farbe anhand von number
+        # color regarding number
         color, seen_numbers, counter = fct_getColor(colors, number,
                                                     seen_numbers,
                                                     counter, n_models)
-        # Symbolform anhand der Dimension
+        # marker regarding dimension
         if dimension not in dim_seen:
             dim_seen[dimension] = len(dim_seen)
 
         dim_idx = dim_seen[dimension] % (len(markers) - 1)
         marker, markersize = markers[dim_idx + 1]
-        # Strichtyp anhand der Position
+        # line regarding position
         linestyle, position = fct_setPlotline(model_key)
-        # Eigenschaften für die Legenden sammeln
+        # collect legend properties
         # group_label = (f"{cat}{' = ' if get_digit(str(number)) else ' with '}"
         #                f"{number}")
         group_label = fct_categoryValue(cat, number)
@@ -2148,7 +2217,7 @@ def plot_XoverLoadPlot(path, models, key, category,
                           else fct_positionLabel(position, useEdges=True))
         if position_label:
             style_pos[position_label] = linestyle
-        # Werte und Kurve
+        # values and curves
         data_xLoad = df_plot['Load'].values
         data_yDef = np.abs(df_plot[output[0]].values)
         ax.plot(data_xLoad,
@@ -2164,7 +2233,7 @@ def plot_XoverLoadPlot(path, models, key, category,
     if len(all_x) == 0 or len(all_y) == 0:
         plt.close(fig)
         return None
-    # Achsen
+    # axis
     name, unit = output[2].rsplit(' ', 1)  # F_elem, [kN]
     fct_formatAxis(ax, all_x, all_y,
                    title=fct_displayForce(output[1]),
@@ -2172,7 +2241,7 @@ def plot_XoverLoadPlot(path, models, key, category,
                    xinv=True,
                    ylabel= f'{fct_mathLabel(fct_displayForce(name))} {unit}'
                    )
-    # Legendeneinträge
+    # legends
     handles_groups = [Line2D([0], [0],
                              color=color,
                              linewidth=1.5,
@@ -2192,7 +2261,6 @@ def plot_XoverLoadPlot(path, models, key, category,
                                 linewidth=1.5,
                                 label=str(position))
                          for position, linestyle in style_pos.items()]
-    # Platz für die Legenden rechts
     fct_adjustCm(fig, left=1.6, right=3.5, bottom=1.4, top=1.0)
     xLegend = 1.03 # since Loadvalue has 3 digits = long
     yLegend = 1.00
@@ -2243,7 +2311,9 @@ def plot_interfaceShaftDefPhase(path, models, category,
     markers, colors = fct_setPlotstyle()
     seen_numbers = {}
     counter = 0
-    fig, ax = plt.subplots(1, 1, figsize=(12/CM_PER_INCH, 8/CM_PER_INCH), dpi=dpi) ###80%
+    fig, ax = plt.subplots(1, 1,
+                           figsize=(12/CM_PER_INCH, 8/CM_PER_INCH),
+                           dpi=dpi) ###80%
     all_x = []
     all_y = []
     dim_seen = {}
@@ -2321,7 +2391,9 @@ def plot_interfaceShaftDef(path, models,
         _, _, dimension, suffix = fct_parseKey(key)
         linestyle, _ = fct_setPlotline(key)
         pathData = os.path.join(path, '_'.join(key.split('_')[:3]))
-        fig, ax = plt.subplots(1, 1, figsize=(12/CM_PER_INCH, 9/CM_PER_INCH), dpi=dpi) ###80%
+        fig, ax = plt.subplots(1, 1,
+                               figsize=(12/CM_PER_INCH, 9/CM_PER_INCH),
+                               dpi=dpi) ###80%
         all_x   = []
         all_y   = []
         _, depth = fct_parseDimension(dimension)
@@ -2373,7 +2445,9 @@ def plot_interfaceShaftSig(path, models,
         all_x      = []
         all_y      = []
         # plot
-        fig, ax = plt.subplots(1, 1, figsize=(12/CM_PER_INCH, 9/CM_PER_INCH), dpi=dpi) ###80%
+        fig, ax = plt.subplots(1, 1,
+                               figsize=(12/CM_PER_INCH, 9/CM_PER_INCH),
+                               dpi=dpi) ###80%
         if   dimension[-1] == '2': depth = 'y'; sigma = 's_1'
         elif dimension[-1] == '3': depth = 'z'; sigma = 'sig_zz'
         else: raise ValueError(f'Dimension {dimension[-1]} not defined!')
@@ -2423,7 +2497,9 @@ def plot_interfaceSlabDef(path, models,
         linestyle, position = fct_setPlotline(key)
         _, colors           = fct_setPlotstyle(flat=True)
         pathData = os.path.join(path, '_'.join(key.split('_')[:3]))
-        fig, ax    = plt.subplots(1, 1, figsize=(12/CM_PER_INCH, 9/CM_PER_INCH), dpi=dpi) ###80%
+        fig, ax    = plt.subplots(1, 1,
+                                  figsize=(12/CM_PER_INCH, 9/CM_PER_INCH),
+                                  dpi=dpi) ###80%
         all_x      = []
         all_y      = []
         # define used folders/phases
@@ -2478,7 +2554,9 @@ def plot_interfaceSlabDef(path, models,
 def plot_interfaceSlabDefPhase(path, models, category, phase=None,
                              save=saveDefault, dpi=dpiDefault):
     _, colors = fct_setPlotstyle()
-    fig, ax = plt.subplots(1, 1, figsize=(15/CM_PER_INCH, 8/CM_PER_INCH), dpi=dpi)
+    fig, ax = plt.subplots(1, 1,
+                           figsize=(15/CM_PER_INCH, 8/CM_PER_INCH),
+                           dpi=dpi)
     labels = []
     values = []
     bar_colors = []
@@ -2663,16 +2741,28 @@ def get_category_labels(categories): # for multi catgeories
 def _category_matches_family(category, family):
     c = str(category).lower()
     return ((family == 'ltp' and 'ltp' in c) or
-            (family == 'dis' and (c.startswith('dis') or 'spacing' in c)) or
-            (family == 'esi' and ('stiff' in c or c in ('e', 'esi') or c.startswith('e_') or c.startswith('ltplee'))) or
-            (family == 'load' and (c.startswith('load') or c in ('qd', 'q'))) or
-            (family == 'slab' and (c.startswith('slab') or 'tslab' in c)) or
+            (family == 'dis' and (c.startswith('dis')
+                                  or 'spacing' in c)) or
+            (family == 'esi' and ('stiff' in c
+                                  or c in ('e', 'esi')
+                                  or c.startswith('e_')
+                                  or c.startswith('ltplee'))) or
+            (family == 'load' and (c.startswith('load')
+                                   or c in ('qd', 'q'))) or
+            (family == 'slab' and (c.startswith('slab')
+                                   or 'tslab' in c)) or
             (family == 'sinum' and 'sinum' in c))
 
 def _extract_category_value(category, family):
     c = str(category)
     lower = c.lower()
-    token_map = {'ltp': 'ltp', 'dis': 'dis', 'esi': 'e', 'load': 'load', 'slab': 'slab', 'sinum': 'sinum'}
+    token_map = {'ltp':     'ltp',
+                 'dis':     'dis',
+                 'esi':     'e',
+                 'load':    'load',
+                 'slab':    'slab',
+                 'sinum':   'sinum'
+                 }
     token = token_map.get(family, family)
     idx = lower.find(token)
     if idx < 0:
@@ -2724,10 +2814,16 @@ def fct_multiCategoryLegend(categories, defaults=DEFAULT_MODEL_SETTINGS):
     title = fct_categoryInfo(family)[0]
     labels = {}
     for cat in categories:
-        value = _extract_category_value(re.sub('ref', '', str(cat), flags=re.I), family)
+        value = _extract_category_value(re.sub('ref', '',
+                                               str(cat),
+                                               flags=re.I),
+                                        family)
         if value is None:
-            value = fct_categoryValue(cat if fct_variedCategory(cat) == family else family,
-                                      'default', fct_modelDefaults(cat, defaults))
+            value = fct_categoryValue(cat
+                                      if fct_variedCategory(cat) == family
+                                      else family,
+                                      'default',
+                                      fct_modelDefaults(cat, defaults))
         labels[cat] = value
     return title, labels
 
@@ -2770,25 +2866,32 @@ def fct_multiCategoryFolderSuffix(categories, defaults=DEFAULT_MODEL_SETTINGS):
             name = str(cat)
             if name.lower().startswith(token):
                 number_text = name[len(token):]
-                match = re.match(r'(?i)^_?([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)', number_text)
-                number = float(match.group(1)) if match else fct_modelDefaults(cat, defaults)[field]
+                match = re.match(r'(?i)^_?([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)',
+                                 number_text)
+                number = (float(match.group(1))
+                          if match
+                          else fct_modelDefaults(cat, defaults)[field])
             else:
                 number = fct_modelDefaults(cat, defaults)[field]
             values.append(float(number))
         unique_values = sorted(set(values))
         if family == 'esi':
-            value_text = '-'.join(fct_stiffnessEngineering(n) for n in unique_values)
+            value_text = '-'.join(fct_stiffnessEngineering(n)
+                                  for n in unique_values)
         elif family == 'load':
-            value_text = '-'.join(f'{n:.1f}' for n in unique_values)
+            value_text = '-'.join(f'{n:.1f}'
+                                  for n in unique_values)
         else:
-            value_text = '-'.join(f'{n:g}' for n in unique_values)
+            value_text = '-'.join(f'{n:g}'
+                                  for n in unique_values)
         if not common:
             common = fct_variedCategory(categories[0])
         return f'{common}_{token}_{value_text}'
 
     # Fallback for unrelated/non-numeric category sets.
     labels, common = get_category_labels(categories)
-    fragments = [labels[cat] for cat in categories]
+    fragments = [labels[cat]
+                 for cat in categories]
     return (common + '_' if common else '') + '-'.join(fragments)
 
 def get_position_color(suffix):
@@ -2823,7 +2926,8 @@ def plot_Matrix(path, category, names,
         formatted = {cat: fct_shortNumber(cat)
                      for cat in categories}
         labels, common = get_category_labels(list(formatted.values()))
-        category_title, category_labels = fct_multiCategoryLegend(categories, defaults)
+        category_title, category_labels = fct_multiCategoryLegend(categories,
+                                                                  defaults)
         names = [name
                  for name in names
                  if fct_parseKey(name)[0] in categories]
@@ -2853,7 +2957,8 @@ def plot_Matrix(path, category, names,
                 category_labels[cat] += f" ({', '.join(dims)})"
     x_labels = sorted({x_label(name, show_dim)
                        for name in names}, key=fct_sortKey)
-    x_pos = {label: i for i, label in enumerate(x_labels)}
+    x_pos = {label: i
+             for i, label in enumerate(x_labels)}
     force_count = len(colomnTyps)
     row_count   = len(rows)
     max_name_len = max((len(part)
@@ -2925,7 +3030,7 @@ def plot_Matrix(path, category, names,
             index = len(model_style)
             if multi_category:
                 numbers = category_numbers[cat]
-                # Erst bei mehr als einer Modellnummer wird Alpha abgestuft.
+                # alpha used ig modelnumber len > 1
                 alpha = (1.0
                          if len(numbers) == 1
                          else (1.0 - 0.6 * numbers.index(number)
@@ -2960,15 +3065,19 @@ def plot_Matrix(path, category, names,
     x_category = (fct_categoryInfo(categories[0])[0]
                   if multi_category and len(categories) == 1
                   else 'Piles per row [-]'
-                  if any('sinum' in fct_parseKey(n)[0].lower() for n in names)
+                  if any('sinum' in fct_parseKey(n)[0].lower()
+                         for n in names)
                   else fct_categoryInfo(category)[0]
                   if not multi_category else 'Model variation')
     def format_number_axes(ax):
-        tick_size = plt.rcParams.get('xtick.labelsize', plt.rcParams.get('font.size', 6))
+        tick_size = plt.rcParams.get('xtick.labelsize',
+                                     plt.rcParams.get('font.size', 6))
         ax.set_xticks(range(len(x_labels)))
-        ax.set_xticklabels([fct_categoryValue(category if not multi_category
-                                              else categories[0],
-                                              fct_shortNumber(label), defaults)
+        ax.set_xticklabels([fct_categoryValue(category
+                                                  if not multi_category
+                                                  else categories[0],
+                                              fct_shortNumber(label),
+                                              defaults)
                             for label in x_labels],
                            rotation=45,
                            ha='right')
@@ -3024,7 +3133,8 @@ def plot_Matrix(path, category, names,
                     if suffix in model_values:
                         line_points.append((x, model_values[suffix]))
                 edge_values = [model_values[suffix]
-                               for suffix in (('_EdgeY',) if not useEdges
+                               for suffix in (('_EdgeY',)
+                                              if not useEdges
                                               else ('_EdgeY', '_EdgeX'))
                                if suffix in model_values]
                 if edge_values:
@@ -3055,12 +3165,14 @@ def plot_Matrix(path, category, names,
                                    linestyle=linestyle,
                                    linewidth=1
                                    )
-            tick_size = plt.rcParams.get('xtick.labelsize', plt.rcParams.get('font.size', 6))
+            tick_size = plt.rcParams.get('xtick.labelsize',
+                                         plt.rcParams.get('font.size', 6))
             ax_pos.set_xticks((0, 1, 2))
             ax_pos.set_xticklabels(('Middle', 'Edge', 'Corner'))
             ax_pos.tick_params(axis='x', labelsize=tick_size, pad=1.5)
             ax_pos.set_xlabel('Position', fontsize=tick_size, labelpad=2.5)
-            ax_pos.set_ylabel(f'{fct_mathLabel(fct_displayForce(colomnTyp))} [{unit}]')
+            ax_pos.set_ylabel(f'{fct_mathLabel(fct_displayForce(colomnTyp))} '
+                              f'[{unit}]')
             ax_pos.set_title(fct_mathLabel(fct_displayForce(colomnTyp)))
             ax_pos.grid(True, linestyle='-', alpha=0.2)
 
@@ -3104,10 +3216,15 @@ def plot_Matrix(path, category, names,
             ax_rat.set_title(fct_mathLabel(fct_displayForce(colomnTyp)))
             format_number_axes(ax_rat)
 
-        all_suffixes = sorted({suffix
+        all_suffixes = sorted({suffix # row 3 and 4
                                for model_values in values.values()
                                for suffix in model_values
-                               if (useEdges or suffix not in ('_EdgeX', '_MiddleEdgeX', '_CornerEdgeX'))}) # row 3 and 4
+                               if (useEdges or suffix not in ('_EdgeX',
+                                                              '_MiddleEdgeX',
+                                                              '_CornerEdgeX',
+                                                              )
+                                   )
+                              })
         if 3 in rows:
             for suffix in all_suffixes:
                 grouped_points = defaultdict(list)
@@ -3115,7 +3232,8 @@ def plot_Matrix(path, category, names,
                     if suffix not in model_values: continue
                     cat, _, dim, _ = fct_parseKey(name)
                     group = (cat, dim) if multi_category else ('all', '')
-                    grouped_points[group].append((x_pos[x_label(name, show_dim)],
+                    grouped_points[group].append((x_pos[x_label(name,
+                                                                show_dim)],
                                                    model_values[suffix]))
                 for (cat, dim), points in grouped_points.items():
                     points.sort(key=lambda point: point[0])
@@ -3167,7 +3285,8 @@ def plot_Matrix(path, category, names,
                                     marker=marker,
                                     markersize=marker_size,
                                     label=label)
-            ax_var.set_ylabel(f'{fct_mathLabel(fct_displayForce(colomnTyp))} [{unit}]')
+            ax_var.set_ylabel(f'{fct_mathLabel(fct_displayForce(colomnTyp))} '
+                              f'[{unit}]')
             ax_var.set_title(fct_mathLabel(fct_displayForce(colomnTyp)))
             format_number_axes(ax_var)
 
@@ -3220,9 +3339,11 @@ def plot_Matrix(path, category, names,
                         # points.sort(key=lambda point: point[0],
                         #             reverse=True)
                         color, (marker,
-                                marker_size) = (
-                            (category_colors[cat], get_suffix_style(suffix)[1]) if multi_category
-                            else get_suffix_style(suffix))
+                                marker_size) = ((category_colors[cat],
+                                                 get_suffix_style(suffix)[1])
+                                                 if multi_category
+                                                 else get_suffix_style(suffix)
+                                                 )
                         ax_dev.plot([point[0] for point in points],
                                     [point[1] for point in points],
                                     color=color,
@@ -3329,7 +3450,12 @@ def plot_Matrix(path, category, names,
                                      marker='.',
                                      markersize=4,
                                      linestyle='None',
-                                     label=fct_categoryValue(category if not multi_category else categories[0], fct_shortNumber(number), defaults))
+                                     label=fct_categoryValue(category
+                                                             if not multi_category
+                                                             else categories[0],
+                                                             fct_shortNumber(number),
+                                                             defaults)
+                                     )
                               for number in sorted({key[1]
                                                     for key in model_style},
                                        key=fct_sortKey)
@@ -3340,7 +3466,12 @@ def plot_Matrix(path, category, names,
                                      marker=marker,
                                      markersize=marker_size,
                                      linestyle='None',
-                                     label=fct_categoryValue(category if not multi_category else categories[0], fct_shortNumber(number), defaults))
+                                     label=fct_categoryValue(category
+                                                             if not multi_category
+                                                             else categories[0],
+                                                             fct_shortNumber(number),
+                                                             defaults)
+                                     )
                               for number, (color, (marker,
                                                    marker_size))
                               in sorted(model_style.items(),
@@ -3352,7 +3483,9 @@ def plot_Matrix(path, category, names,
                                          handles    = handles_models,
                                          xLegend    = 1+gap_x,
                                          yLegend    = 1,
-                                         title      = (fct_categoryInfo(category)[0] if not multi_category else 'Model variation'))
+                                         title      = (fct_categoryInfo(category)[0]
+                                                       if not multi_category
+                                                       else 'Model variation'))
         ax_i.add_artist(legend_models)
         fig.canvas.draw()
         yLegend = (legend_models.get_window_extent(fig.canvas.get_renderer())
@@ -3375,7 +3508,8 @@ def plot_Matrix(path, category, names,
         if multi_category:
             ax_i.add_artist(legend_dimensions)
             fig.canvas.draw()
-            if not any(r in rows for r in (2, 3, 4)):
+            if not any(r in rows
+                       for r in (2, 3, 4)):
                 yLegend = (legend_dimensions.get_window_extent(fig.canvas
                                                                .get_renderer())
                            .transformed(ax_i.transAxes.inverted()).y0
@@ -3443,7 +3577,8 @@ def plot_Matrix(path, category, names,
                 present_suffixes = [suffix
                                     for suffix in ('_Middle',
                                                    '_EdgeY',
-                                                   *(() if not useEdges else ('_EdgeX',)),
+                                                   *(() if not useEdges
+                                                     else ('_EdgeX',)),
                                                    '_Corner',
                                                    '_MiddleEdgeX',
                                                    '_MiddleEdgeY',
@@ -3494,25 +3629,26 @@ def plot_Matrix(path, category, names,
                                  title      = 'Reference line')
     if phase == -1:    phaseSuf = 'in the last phase'
     else:              phaseSuf = f'in phase {phase}'
-    if multi_category:
-        folderSuf = fct_multiCategoryFolderSuffix(categories)
-        variaSuf  = common
-    else:
-        variaSuf  = category
-        folderSuf = category
+    if multi_category: folderSuf = fct_multiCategoryFolderSuffix(categories)
+    else:              folderSuf = category
     if row_count > 1:
         if multi_category:
             variation_title = ' and '.join(dict.fromkeys(
-                fct_categoryInfo(cat)[1] for cat in categories))
-            if all(str(cat).lower().startswith('ltplee') for cat in categories):
+                fct_categoryInfo(cat)[1]
+                for cat in categories))
+            if all(str(cat).lower().startswith('ltplee')
+                   for cat in categories):
                 fixed_suffix = ' for the LTP with LE model'
             else:
                 fixed_suffix = (' in the simplified model'
-                                if any(fct_isSimplifiedModel(cat) for cat in categories)
+                                if any(fct_isSimplifiedModel(cat)
+                                       for cat in categories)
                                 else '')
         else:
-            variation_title, fixed_suffix = fct_singleCategoryTitleInfo(category, defaults)
-        title = (f'Impact on {nameTyps} due to {variation_title} variation {phaseSuf}{fixed_suffix}')
+            variation_title, fixed_suffix = fct_singleCategoryTitleInfo(category,
+                                                                        defaults)
+        title = (f'Impact on {nameTyps} due to {variation_title} '
+                 f'variation {phaseSuf}{fixed_suffix}')
         # Centre the title over the plotting axes, not the legends on the right.
         # Wrap at natural word boundaries within the available axes width.
         import textwrap
@@ -3523,7 +3659,9 @@ def plot_Matrix(path, category, names,
         fig.suptitle('\n'.join(title_lines),
                      x=(left_cm + plot_width_cm / 2) / fig_width_cm,
                      y=1 - 0.25 / fig_height_cm,
-                     fontsize=8, ha='center', va='top')
+                     fontsize=8,
+                     ha='center',
+                     va='top')
     # Scientific notation for large/small y-axis values
     from matplotlib.ticker import ScalarFormatter
     for ax in axes.flat:
@@ -3894,65 +4032,43 @@ def fct_methodShades(methods):
 
 def fct_finestMeshReference(modelsRef, path=None,
                             phase=None, typForce=None):
-
-    mesh_rank = {
-        'fine':         0,
-        'finemedium':   1,
-        'mediumfine':   1,
-        'mfine':        1,
-        'medium':       2,
-        'mediumcoarse': 3,
-        'coarsemedium': 3,
-        'mcoarse':      3,
-        'coarse':       4,
-    }
-
+    mesh_rank = {'fine':         0,
+                 'finemedium':   1,
+                 'mediumfine':   1,
+                 'mfine':        1,
+                 'medium':       2,
+                 'mediumcoarse': 3,
+                 'coarsemedium': 3,
+                 'mcoarse':      3,
+                 'coarse':       4,
+                 }
     def get_mesh_info(name):
         name = os.path.basename(os.path.normpath(str(name)))
-        match = re.match(
-            r'^(.*?)_([A-Za-z]+)_unitcell[23]$',
-            name, re.IGNORECASE
-        )
-
-        if not match:
-            return None
-
+        match = re.match(r'^(.*?)_([A-Za-z]+)_unitcell[23]$',
+                         name, re.IGNORECASE)
+        if not match: return None
         family = match.group(1)
         mesh = match.group(2).lower()
-
         if mesh not in mesh_rank:
             return None
-
         return family, mesh, mesh_rank[mesh]
-
     if not modelsRef:
         return {}
-
-    # First select the finest supplied reference
-    ranked = [
-        (get_mesh_info(key)[2], key)
-        for key in modelsRef
-        if get_mesh_info(key) is not None
-    ]
-
-    if not ranked:
-        return dict(modelsRef)
-
+    ranked = [(get_mesh_info(key)[2], key)
+              for key in modelsRef
+              if get_mesh_info(key) is not None
+              ]
+    if not ranked: return dict(modelsRef)
     _, ref_key = min(ranked, key=lambda item: item[0])
     selected = {ref_key: dict(modelsRef[ref_key])}
-
     if path is None or phase is None or typForce is None:
         return selected
-
     family, _, current_rank = get_mesh_info(ref_key)
-
     # Identify study directory
     search_path = os.path.abspath(path)
-
-    for folder in [search_path, *list(
-            os.path.dirname(search_path) for _ in [])]:
+    for folder in [search_path, *list(os.path.dirname(search_path)
+                                      for _ in [])]:
         pass
-
     ancestors = []
     folder = search_path
     while True:
@@ -3961,92 +4077,60 @@ def fct_finestMeshReference(modelsRef, path=None,
         if parent == folder:
             break
         folder = parent
-
     study_dir = None
     candidates = []
-
     for folder in ancestors:
-        possible = glob.glob(os.path.join(
-            folder, f'{family}_*_unitcell2'
-        ))
-
-        possible = [
-            p for p in possible
-            if os.path.isdir(p)
-            and get_mesh_info(p) is not None
-        ]
-
+        possible = glob.glob(os.path.join(folder,
+                                          f'{family}_*_unitcell2')
+                             )
+        possible = [p
+                    for p in possible
+                    if os.path.isdir(p)
+                    and get_mesh_info(p) is not None
+                    ]
         if possible:
             study_dir = folder
             candidates = possible
             break
-
     if study_dir is None:
         return selected
-
-    candidates.sort(
-        key=lambda p: get_mesh_info(p)[2]
-    )
-
+    candidates.sort(key=lambda p: get_mesh_info(p)[2])
     # Read a reference value from Fsu_phases.csv
-    force_columns = {
-        'Felem': 'F_elem',
-        'Fsoil': 'F_soil',
-        'Fbase': 'F_base',
-        'Fshaft': 'F_shaft',
-        'Relem': 'F_elem',
-        'Rsoil': 'F_soil',
-        'Rbase': 'F_base',
-        'Rshaft': 'F_shaft',
-        'R_elem': 'F_elem',
-        'R_soil': 'F_soil',
-        'R_base': 'F_base',
-        'R_shaft': 'F_shaft',
-    }
-
+    force_columns = {'Felem': 'F_elem',
+                     'Fsoil': 'F_soil',
+                     'Fbase': 'F_base',
+                     'Fshaft': 'F_shaft',
+                     'Relem': 'F_elem',
+                     'Rsoil': 'F_soil',
+                     'Rbase': 'F_base',
+                     'Rshaft': 'F_shaft',
+                     'R_elem': 'F_elem',
+                     'R_soil': 'F_soil',
+                     'R_base': 'F_base',
+                     'R_shaft': 'F_shaft',
+                     }
     column = force_columns.get(typForce, typForce)
-
     for candidate in candidates:
         info = get_mesh_info(candidate)
         rank = info[2]
-
         if rank >= current_rank:
             continue
-
-        csv_file = os.path.join(
-            candidate, 'summary_value', 'Fsu_phases.csv'
-        )
-
-        if not os.path.isfile(csv_file):
-            continue
-
+        csv_file = os.path.join(candidate,
+                                'summary_value',
+                                'Fsu_phases.csv')
+        if not os.path.isfile(csv_file): continue
         df = pd.read_csv(csv_file, sep=';')
-
-        if 'Phase' not in df.columns or column not in df.columns:
-            continue
-
-        values = df.loc[
-            pd.to_numeric(df['Phase'], errors='coerce')
-            == int(phase),
-            column
-        ]
-
-        if values.empty:
-            continue
-
+        if 'Phase' not in df.columns or column not in df.columns: continue
+        values = df.loc[pd.to_numeric(df['Phase'],
+                                      errors='coerce') == int(phase), column]
+        if values.empty: continue
         force = pd.to_numeric(values, errors='coerce').iloc[0]
-
-        if not np.isfinite(force):
-            continue
-
+        if not np.isfinite(force): continue
         new_key = os.path.basename(candidate)
         new_value = dict(modelsRef[ref_key])
         new_value['force'] = float(force)
-
         print(f'Reference: {ref_key} -> {new_key}')
-
         return {new_key: new_value}
-
     return selected
 
 def fct_comparisonDimensionShort(dimension):
@@ -4057,7 +4141,6 @@ def fct_comparisonDimensionShort(dimension):
                       (str(dimension)[0] + str(dimension)[-1])
                       if len(str(dimension)) >= 2 else str(dimension))
 
-
 def fct_categoryMeta(category, defaults=DEFAULT_MODEL_SETTINGS):
     """Shared legend title, variation name, and fixed-condition title suffix."""
     raw_cat = str(category).split('_')[0]
@@ -4066,7 +4149,7 @@ def fct_categoryMeta(category, defaults=DEFAULT_MODEL_SETTINGS):
     model_suffix = fct_modelTitleSuffix(category)
     if c.startswith('ltplee'):
         varied = 'sinum' if c.endswith('sinum') else 'esi'
-        # ltplee... denotes LTP with a linear-elastic (LE) model.
+        # ltplee ... denotes LTP with a linear-elastic (LE) model.
         fixed = ' for the LTP with LE model'
         if varied == 'sinum':
             raw = cat[len('ltplee'):-len('sinum')]
@@ -4092,14 +4175,10 @@ def fct_categoryMeta(category, defaults=DEFAULT_MODEL_SETTINGS):
         return (*fct_categoryInfo(varied), fixed + model_suffix)
     return (*fct_categoryInfo(cat), model_suffix)
 
-
 def fct_comparisonCategory(category, defaults=DEFAULT_MODEL_SETTINGS):
     """Backward-compatible wrapper for comparison plots."""
     legend_title, _, title_context = fct_categoryMeta(category, defaults)
     return legend_title, title_context
-
-
-
 
 def fct_dimensionPositionLabel(dimension, suffix='', short_dim=False,
                                separator=' - ', useEdges=False):
@@ -4112,7 +4191,6 @@ def fct_dimensionPositionLabel(dimension, suffix='', short_dim=False,
         return dim_label
     return f'{dim_label}{separator}{pos_label}'
 
-
 def fct_hatchLegendPatch(label, hatch, facecolor='white', edgecolor='black',
                          linewidth=0.6, hatch_linewidth=0.35):
     patch = Patch(facecolor=facecolor, edgecolor=edgecolor,
@@ -4123,7 +4201,6 @@ def fct_hatchLegendPatch(label, hatch, facecolor='white', edgecolor='black',
         pass
     return patch
 
-
 def fct_applyScientificFormatter(ax, powerlimits=(-2, 3), fontsize=6):
     from matplotlib.ticker import ScalarFormatter
     formatter = ScalarFormatter(useMathText=True, useOffset=False)
@@ -4131,7 +4208,6 @@ def fct_applyScientificFormatter(ax, powerlimits=(-2, 3), fontsize=6):
     formatter.set_powerlimits(powerlimits)
     ax.yaxis.set_major_formatter(formatter)
     ax.yaxis.get_offset_text().set_fontsize(fontsize)
-
 
 def fct_exportValueTable(pathFolder, filename, row_labels, values,
                          row_header, value_header, caption=None):
@@ -4147,28 +4223,41 @@ def fct_exportValueTable(pathFolder, filename, row_labels, values,
             writer.writerow([label, value])
 
     def latex_escape(value):
-        replacements = {'\\': r'\textbackslash{}', '&': r'\&', '%': r'\%',
-                        '$': r'\$', '#': r'\#', '_': r'\_', '{': r'\{',
-                        '}': r'\}', '~': r'\textasciitilde{}', '^': r'\textasciicircum{}'}
+        replacements = {'\\': r'\textbackslash{}',
+                        '&': r'\&',
+                        '%': r'\%',
+                        '$': r'\$',
+                        '#': r'\#',
+                        '_': r'\_',
+                        '{': r'\{',
+                        '}': r'\}',
+                        '~': r'\textasciitilde{}',
+                        '^': r'\textasciicircum{}'
+                        }
         return ''.join(replacements.get(char, char) for char in str(value))
-
     latex_lines = [r'% Requires \usepackage{booktabs}',
                    r'\begin{table}[htbp]',
                    r'    \centering',
                    r'    \begin{tabular}{lr}',
                    r'        \toprule',
-                   f'        {latex_escape(row_header)} & {latex_escape(value_header)} \\\\',
+                   f'        {latex_escape(row_header)} & '
+                   f'{latex_escape(value_header)} \\\\',
                    r'        \midrule']
     for label, value in zip(row_labels, values):
         value_text = (f'{float(value):.6g}'
-                      if isinstance(value, (int, float, np.floating, np.integer)) else str(value))
-        latex_lines.append(f'        {latex_escape(label)} & {latex_escape(value_text)} \\\\')
+                      if isinstance(value, (int, float,
+                                            np.floating,
+                                            np.integer))
+                      else str(value))
+        latex_lines.append(f'        {latex_escape(label)} & '
+                           f'{latex_escape(value_text)} \\\\')
     latex_lines.extend([r'        \bottomrule',
                         r'    \end{tabular}',
                         f'    \\caption{{{caption or value_header}}}',
                         f'    \\label{{tab:{filename}}}',
                         r'\end{table}'])
-    with open(os.path.join(pathFolder, f'{filename}.tex'), 'w', encoding='utf-8') as file:
+    with open(os.path.join(pathFolder, f'{filename}.tex'), 'w',
+              encoding='utf-8') as file:
         file.write('\n'.join(latex_lines) + '\n')
 
 def plot_approachVariationPlot(path, category, typForce,
@@ -4183,25 +4272,21 @@ def plot_approachVariationPlot(path, category, typForce,
                                dpi = dpiDefault):
     from matplotlib.colors import to_rgba
     if typPlot in ('force', 'dual'):
-        modelsRef = fct_finestMeshReference( modelsRef,
+        modelsRef = fct_finestMeshReference(modelsRef,
                                             path=path,
                                             phase=phase,
                                             typForce=typForce
                                             )
-    multiple_dim = any(
-        'unitcell2' not in model_key.lower()
-        for model_key in modelsDict
-        )
-    method_groups = [
-        descr
-        for model in modelsDict.values()
-        for descr in model["methods"]
-        if not descr.startswith(tuple(exclude_methods))
-    ]
+    multiple_dim = any('unitcell2' not in model_key.lower()
+                       for model_key in modelsDict
+                       )
+    method_groups = [descr
+                     for model in modelsDict.values()
+                     for descr in model["methods"]
+                     if not descr.startswith(tuple(exclude_methods))
+                     ]
     group_shades = fct_methodShades(method_groups)
     # Always use method-group shading when enabled
-    group_shading = use_shades
-    
     vals_label  = []
     vals_numbers = []
     vals_dimension_position = []
@@ -4209,15 +4294,12 @@ def plot_approachVariationPlot(path, category, typForce,
     vals_time   = []
     bar_colors  = []
     bar_hatches = []
-    method_groups = [
-        descr
-        for model in modelsDict.values()
-        for descr in model["methods"]
-        if not descr.startswith(tuple(exclude_methods))
-    ]
+    method_groups = [descr
+                     for model in modelsDict.values()
+                     for descr in model["methods"]
+                     if not descr.startswith(tuple(exclude_methods))
+                     ]
     group_shades = fct_methodShades(method_groups)
-    # Group shading if multiple model categories exist
-    group_shading = use_shades and len(legendColor) > 1
     for model_key, model in modelsDict.items():
         color = model["color"]
         hatch = model["hatch"]
@@ -4227,26 +4309,29 @@ def plot_approachVariationPlot(path, category, typForce,
             vals_label.append(descr)
             _, model_number, dimension, position = fct_parseKey(model_key)
             vals_numbers.append(str(model_number))
-            dim_short = fct_comparisonDimensionShort(dimension)
-            pos_label = fct_positionLabel(position, useEdges=False)
-            vals_dimension_position.append(fct_dimensionPositionLabel(dimension, position, short_dim=True, separator=' - ', useEdges=False))
+            vals_dimension_position.append(fct_dimensionPositionLabel(
+                                                              dimension,
+                                                              position,
+                                                              short_dim=True,
+                                                              separator=' - ',
+                                                              useEdges=False
+                                                              ))
             vals_force.append(method["force"])
             vals_time.append(method["time"])
             bar_hatches.append(hatch)
-            if use_shades:
-                alpha = group_shades[fct_methodGroup(descr)]
-            else:
-                alpha = 1.0
+            if use_shades:      alpha = group_shades[fct_methodGroup(descr)]
+            else:               alpha = 1.0
             # Apply transparency to fill only
             rgba = to_rgba(color)
-            bar_colors.append(
-                (rgba[0], rgba[1], rgba[2], rgba[3] * alpha)
-            )
+            bar_colors.append((rgba[0], rgba[1],
+                               rgba[2], rgba[3] * alpha))
     methods_by_dim = defaultdict(set)
     for model_key, model in modelsDict.items():
         dim = fct_parseKey(model_key)[2]
-        methods_by_dim[dim].update(descr for descr in model['methods']
-                                   if not descr.startswith(tuple(exclude_methods)))
+        methods_by_dim[dim].update(descr
+                                   for descr in model['methods']
+                                   if not descr.startswith(tuple(
+                                           exclude_methods)))
     dimension_axis = bool(methods_by_dim) and all(
         len(methods) <= 1 for methods in methods_by_dim.values())
     number_on_axis = False
@@ -4282,8 +4367,7 @@ def plot_approachVariationPlot(path, category, typForce,
                                                          figHeight),
                                                 gridspec_kw={'width_ratios':
                                                              [1, 1],
-                                                             'wspace':
-                                                                 0.05},
+                                                             'wspace': 0.05},
                                                 dpi=dpi
                                                 )
         ax = ax_force
@@ -4380,21 +4464,30 @@ def plot_approachVariationPlot(path, category, typForce,
     ax_time.set_yticks(y)
     ax_time.set_yticklabels(vals_label)
     if typPlot == 'dual':
-        ax_time.set_ylabel('Dimension' if dimension_axis else 'Force evaluation method')
+        ax_time.set_ylabel('Dimension'
+                           if dimension_axis
+                           else 'Force evaluation method')
         ax_time.set_xlabel(f'Time [{unitT}]')
         ax_force.set_xlabel(f'{symbol} [{unit}]')
         ax_force.tick_params(axis       = 'y',
                              left       = False,
                              labelleft  = False)
-        fig.suptitle(f'{quantity}-Time-Comparison for {phase_text}{title_context}')
+        fig.suptitle(f'{quantity}-Time-Comparison for '
+                     f'{phase_text}{title_context}')
     elif typPlot == 'force':
-        ax_force.set_ylabel('Dimension' if dimension_axis else 'Force evaluation method')
+        ax_force.set_ylabel('Dimension'
+                            if dimension_axis
+                            else 'Force evaluation method')
         ax_force.set_xlabel(f'{symbol} [{unit}]')
-        ax_force.set_title(f'{quantity}-Comparison for {phase_text}{title_context}')
+        ax_force.set_title(f'{quantity}-Comparison for '
+                           f'{phase_text}{title_context}')
     elif typPlot == 'time':
-        ax_time.set_ylabel('Dimension' if dimension_axis else 'Force evaluation method')
+        ax_time.set_ylabel('Dimension'
+                           if dimension_axis
+                           else 'Force evaluation method')
         ax_time.set_xlabel(f'Time [{unitT}]')
-        ax_time.set_title(f'Time-Comparison for {phase_text}{title_context}')
+        ax_time.set_title(f'Time-Comparison for '
+                          f'{phase_text}{title_context}')
     # legends
     handles_color = []
     for description, color in sorted(legendColor.items(),
@@ -4449,18 +4542,27 @@ def plot_approachVariationPlot(path, category, typForce,
         right_cm  = 2.7
         top_cm    = 0.7
         bottom_cm = 1.2
-        fig_width_cm  = fig.get_figwidth() * CM_PER_INCH
-        fig_height_cm = fig.get_figheight() * CM_PER_INCH
-        fct_adjustCm(fig, left=left_cm, right=right_cm,
-                 top=top_cm, bottom=bottom_cm)
+        fct_adjustCm(fig,
+                     left       = left_cm,
+                     right      = right_cm,
+                     top        = top_cm,
+                     bottom     = bottom_cm)
     else:
-        fct_adjustCm(fig, left=2.2, right=3.5, bottom=1.4, top=1.0)
+        fct_adjustCm(fig,
+                     left       = 2.2,
+                     right      = 3.5,
+                     bottom     = 1.4,
+                     top        = 1.0)
     gap     = 0.02
     xLegend = 1.00+gap
     yLegend = 1.00
     legends = []
-    for title, handles in [(legend_category_title, [] if number_on_axis else handles_color),
-                       ('Dimension',    [] if dimension_axis else handles_hatch),
+    for title, handles in [(legend_category_title, []
+                            if number_on_axis
+                            else handles_color),
+                       ('Dimension',    []
+                        if dimension_axis
+                        else handles_hatch),
                        ('Method group', handles_shades),
                        ('UC2 values',   handles_lines)
                        ]:
@@ -4498,14 +4600,23 @@ def plot_approachVariationPlot(path, category, typForce,
                             f'{typPlot}_p{phase}_{key.split("_")[1]}')
     filename = f'{typPlot}_{typForce}_p{phase}_{key}'
     if typPlot == 'force':
-        fct_exportValueTable(pathData, filename + '_table', vals_label, vals_force,
+        fct_exportValueTable(pathData,
+                             filename + '_table',
+                             vals_label,
+                             vals_force,
                              'Case', f'{symbol} [{unit}]',
-                             caption=f'{quantity} comparison values for {phase_text}{title_context}.')
+                             caption = (f'{quantity} comparison values for '
+                                        f'{phase_text}{title_context}.')
+                             )
     elif typPlot == 'time':
-        fct_exportValueTable(pathData, filename + '_table', vals_label,
+        fct_exportValueTable(pathData,
+                             filename + '_table',
+                             vals_label,
                              [v / timeFactor for v in vals_time],
                              'Case', f'Time [{unitT}]',
-                             caption=f'Time comparison values for {phase_text}{title_context}.')
+                             caption = ( 'Time comparison values for '
+                                        f'{phase_text}{title_context}.')
+                             )
     pathFile = fct_formatSave(save, fig, pathData, filename)
     return pathFile
 
@@ -4582,7 +4693,7 @@ def fct_runtimeTable(folder_infos, runtimes, pathPlot, save=True):
     print('-+-'.join('-' * width for width in widths))
     for row in display_rows: print(format_row(row))
     fig_table, ax_table = plt.subplots(figsize=(9,
-                                                max(2.0, 0.36 * (len(rows) + 2))),
+                                       max(2.0, 0.36 * (len(rows) + 2))),
                                        dpi=dpiDefault
                                        )
     ax_table.axis('off')
@@ -4799,10 +4910,15 @@ def plot_runtime(path,
     ax.set_xlabel(legend_category_title if category != 'total'
                   else 'Model / variation')
     ax.set_ylabel(f'Runtime [{unit}]')
-    ax.set_title('Runtime Comparison regarding ' + title_context.removeprefix(' for ').strip() if title_context else 'Runtime Comparison')
+    ax.set_title('Runtime Comparison regarding ' +
+                 title_context.removeprefix(' for ').strip()
+                 if title_context
+                 else 'Runtime Comparison')
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     # LEGENDS
-    handles_color = [Patch(facecolor=color, edgecolor='black', label=fct_categoryValue(varied_category, number))
+    handles_color = [Patch(facecolor=color,
+                           edgecolor='black',
+                           label=fct_categoryValue(varied_category, number))
                      for number, color in color_map.items()]
     handles_hatch = [fct_hatchLegendPatch(dim, hatch)
                      for dim, hatch in hatch_map.items()]

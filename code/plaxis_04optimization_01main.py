@@ -3,9 +3,7 @@
 Created on Sat Sep 26 09:20:29 2026
 
 @author: annal
-"""
 
-"""
 PLAXIS optimisation. Requires pymoo >= 0.6 and the existing project modules.
 Every candidate, including rejected/failed models, is appended to a semicolon
 separated CSV immediately. One run directory per algorithm and seed.
@@ -22,7 +20,6 @@ import pandas as pd
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
 from itertools import product
-
 from plaxis_00calling_02helpers import (open_plaxisData,
                                         close_plaxis)
 from plaxis_04optimization_02helpers import (get_buildingData,
@@ -568,7 +565,6 @@ def run_algorithm(ev):
                                         eliminate_duplicates = False,
                                         **cfg.algorithm_kwargs
                                         )
-
         else:
             class Problem(ElementwiseProblem):
                 def __init__(self):
@@ -622,7 +618,6 @@ def run_algorithm(ev):
                         verbose                     = "console" in cfg.output,
                         return_least_infeasible     = False)
 
-
 def write_settings(path, cfg, evaluator): # for opt_algo
     """Record the effective inputs and the actual discrete design space."""
     settings = {key: value
@@ -668,7 +663,6 @@ def write_settings(path, cfg, evaluator): # for opt_algo
                   ensure_ascii  = False,
                   default       = str)
 
-
 def opt_algo(pathFolder          = "Optimization_study",
              dimension           = "unitcell2",
              device              = 0,
@@ -682,36 +676,35 @@ def opt_algo(pathFolder          = "Optimization_study",
              user_slab           = 24,
              user_soil           = 5,
              algorithm           = 'GA', # grid ignores calcSize and pop_size
-             output              =('run',
-                                   'console',
-                                   'landscape_bars', # 2D contours
-                                   'landscape_surface', # 3D interpolated surf
-                                   'convergence',
-                                   'evolution',
-                                   'cost_settlement',
-                                   'parallel',
-                                   # 'method_ranges',
-                                   'best_feasible',
-                                   ),
-             vary                =("si_R",
-                                   "si_L"),
-             fixed               =None,
-             bounds              =None,
-             limits              =None,
-             constraint_mode     ="constraints",
-             penalty_weights     =None,
-             calcSize            =100,
-             pop_size            =10,
-             seed                =1,
-             stop_window         =20,    # best costs with dev. after x iter.
-             stop_cost_rel       =0.001, # deviation of 0.1%
-             stop_cv_abs         =0.0,   # should stay zero
-             METHOD_LIMITS       =None,
-             METHOD_PARAMS       =None,
-             METHOD_COSTS        =None,
-             algorithm_kwargs    =None,
-             simulate            =None,
-             scales              =None
+             output              = ('run',
+                                    'console',
+                                    'landscape_bars', # 2D contours
+                                    'landscape_surface', # 3D interpolated surf
+                                    'convergence',
+                                    'evolution',
+                                    'cost_settlement',
+                                    'parallel',
+                                    # 'method_ranges',
+                                    'best_feasible',
+                                    ),
+             vary                = ("si_R", "si_L"),
+             fixed               = None,
+             bounds              = None,
+             limits              = None,
+             constraint_mode     = "constraints",
+             penalty_weights     = None,
+             calcSize            = 100,
+             pop_size            = 10,
+             seed                = 1,
+             stop_window         = 20,    # best costs with dev. after x iter.
+             stop_cost_rel       = 0.001, # deviation of 0.1%
+             stop_cv_abs         = 0.0,   # should stay zero
+             METHOD_LIMITS       = None,
+             METHOD_PARAMS       = None,
+             METHOD_COSTS        = None,
+             algorithm_kwargs    = None,
+             simulate            = None,
+             scales              = None
              ):
     if scales is not None:
         unknown = set(scales) - set(SCALES)
@@ -781,34 +774,7 @@ def opt_algo(pathFolder          = "Optimization_study",
                                              ].to_dict())
         elif "console" in cfg.output:
             print("No feasible solution in the completed evaluations.")
-    else:
-        path, result = path, None
-        # settings_file = os.path.join(path, "optimization_settings.json")
-        # if not os.path.isfile(settings_file):
-        #     raise FileNotFoundError(settings_file)
-        # with open(settings_file, "r", encoding="utf-8") as f:
-        #     settings = json.load(f)
-        # for key in ("algorithm",
-        #             "dimension",
-        #             "user_methods",
-        #             "user_load",
-        #             "user_slab",
-        #             "user_soil",
-        #             "vary",
-        #             "scales",
-        #             "fixed",
-        #             "bounds",
-        #             "limits",
-        #             "constraint_mode",
-        #             "penalty_weights",
-        #             "calcSize",
-        #             "pop_size",
-        #             "seed",
-        #             ):
-        #     if key in settings:
-        #         setattr(cfg, key, settings[key])
-        # cfg.vary = tuple(cfg.vary)
-        # cfg.user_methods = tuple(cfg.user_methods)
+    else: path, result = path, None
     plots = {}
     requested = set(cfg.output) & {
                                    "landscape_bars",

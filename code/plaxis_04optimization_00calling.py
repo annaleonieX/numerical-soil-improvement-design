@@ -4,13 +4,13 @@ Created on Sat Sep 26 09:20:29 2026
 
 @author: annaleonie
 
+for ISRES change in
+C:\\ProgramData\\Seequent\\PLAXIS Python Distribution
+V3\\python\\\Lib\\site-packages\\pymoo\algorithms\\soo\nonconvex\\sres.py
+necessary is: J = np.arange(len(phi))
+-> J = np.arange(len(phi), dtype=np.int64)
+-> open as admin is often necessary depending on the computer settings
 """
-
-# for ISRES change in
-# C:\\ProgramData\\Seequent\\PLAXIS Python Distribution V3\\python\\\Lib\\site-packages\\pymoo\algorithms\\soo\nonconvex\\sres.py
-# necessary is: J = np.arange(len(phi)) -> J = np.arange(len(phi), dtype=np.int64) (open as admin is often necessary depending on the computer settings)
-
-
 
 def fct_opt(study           = 0, # 0 = no output
             seed            = 1,
@@ -130,7 +130,7 @@ def fct_opt(study           = 0, # 0 = no output
                        bounds       = dict(
                                            ltp       = ( 0.00, 1.50),#16
                                            slab      = ( 0.30, 2.50),#23
-                                           si_R      = ( 0.30, 0.45),#16                                     
+                                           si_R      = ( 0.30, 0.45),#16
                                            si_L      = ( 2.0, 12.50),#53
                                            si_num    = (10.0, 20.00),#11 = 3.4Mio
                                            ),
@@ -263,7 +263,7 @@ def fct_opt(study           = 0, # 0 = no output
             slabDEFAULT  = 43.5
             soilDEFAULT  = 'Nguyen_RI'
             settlDEFAULT = 0.03357  # Nguyen: RI solution 3
-            settlDEFAULT = 0.15710  # Nguyen: standardfall auswertung see SC
+            settlDEFAULT = 0.15710  # Nguyen: see SC
             si_E_ref = 4700.0 * (10e3 / 1000.0)**0.5 * 1000.0
             DESIGN = dict(RUN_PATH_MAIN = f'Opt_Nguyen_RI_seed{seed}',
                           pop_size      = 20,   # assumption: trial budget
@@ -305,7 +305,7 @@ def fct_opt(study           = 0, # 0 = no output
                 DESIGN.update(RUN_PATH_MAIN = f'Opt_Yasse214_seed{seed}',
                               vary = ('si_L',),
                               bounds = dict(si_L = (6.0, 25.0)),
-                              scales = dict(si_L = 20,),  # Schrittweite 0.05 m
+                              scales = dict(si_L = 20,),  # steps 0.05 m
                               fixed = dict(si_method = 'VR_Yasser',
                                            si_num    = si_num_ref,
                                            si_R      = 0.50,
@@ -423,7 +423,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             # 221
@@ -443,7 +443,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             
@@ -463,7 +463,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             
@@ -472,9 +472,7 @@ def fct_opt(study           = 0, # 0 = no output
                               pop_size     = 10,
                               calcSize     = 800,
                               stop_window  = 30,
-                              user_methods = (
-                                             'VR_pebble',
-                                             ),
+                              user_methods = ('VR_pebble',),
                               vary = ('si_num',
                                       ),
                               bounds = dict(si_num = (40, 53)),
@@ -484,7 +482,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             elif study == 224:
@@ -494,8 +492,8 @@ def fct_opt(study           = 0, # 0 = no output
                               calcSize     = 800,
                               stop_window  = 60,
                               user_methods = ('VR_quarry',
-                                             'VR_crushedpebble',
-                                             'VR_pebble',
+                                              'VR_crushedpebble',
+                                              'VR_pebble',
                                              ),
                               vary = ('si_num',
                                       'si_method'),
@@ -505,7 +503,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             elif study == 225:
@@ -515,8 +513,8 @@ def fct_opt(study           = 0, # 0 = no output
                               calcSize     = 800,
                               stop_window  = 60,
                               user_methods = ('VR_quarry',
-                                             'VR_crushedpebble',
-                                             'VR_pebble',
+                                              'VR_crushedpebble',
+                                              'VR_pebble',
                                              ),
                               vary = ('si_num',
                                       'si_method'),
@@ -526,7 +524,7 @@ def fct_opt(study           = 0, # 0 = no output
                                            si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             # 222
@@ -536,8 +534,8 @@ def fct_opt(study           = 0, # 0 = no output
                               calcSize     = 800,
                               stop_window  = 80,
                               user_methods = ('VR_quarry',
-                                             'VR_crushedpebble',
-                                             'VR_pebble',
+                                              'VR_crushedpebble',
+                                              'VR_pebble',
                                              ),
                               vary = ('si_num',
                                       'si_method',
@@ -548,7 +546,7 @@ def fct_opt(study           = 0, # 0 = no output
                               fixed = dict(si_R      = 0.3,
                                            slab      = 0,
                                            ltp       = 1,
-                                           si_E      = 100000,#not used
+                                           si_E      = 100000, #not used
                                            ),
                               )
             else: print(f'study {study} not defined regaridng Study_Stacho')
@@ -571,8 +569,7 @@ def fct_opt(study           = 0, # 0 = no output
             # 220
             if study == 230:
                 DESIGN.update(RUN_PATH_MAIN = f'Opt_Bouassida230_seed{seed}',
-                              vary = ('si_num',
-                                      'si_L'),
+                              vary = ('si_num', 'si_L'),
                               bounds = dict(si_num = (4, 14),
                                             si_L = (8, 18)),
                               scales = dict(si_L = 0.5,), # every 2 m

@@ -718,8 +718,10 @@ def fct_modelModeller(s_i, g_i, dimension,
             else: loading = []
         else: # to evaluate influnce in the 3d model (unitcell not useful!)
             if dimension.endswith('2'):
-                loading = g_i.lineload((0,                     slab_params['OK']),
-                                       (soil_params['length'], slab_params['OK']),
+                loading = g_i.lineload((0,
+                                        slab_params['OK']),
+                                       (soil_params['length'],
+                                        slab_params['OK']),
                                        'Distribution', 'Linear',
                                        'qy_start', -line_load,
                                        'qy_end',   -line_load)
@@ -897,7 +899,8 @@ def fct_modelModeller(s_i, g_i, dimension,
                         si_volume[-1].Material = si_soil
                         g_i.delete(si_surf)
                         # Base interface
-                        si_base_radius = si_params['radius'] + si_base_radius_ext
+                        si_base_radius = (si_params['radius'] +
+                                          si_base_radius_ext)
                         checks = [("minx", si_pos_xi, "<"),
                                   ("maxy", si_pos_yi, ">"),
                                   ("miny", si_pos_yi, "<"),
@@ -954,12 +957,15 @@ def fct_modelModeller(s_i, g_i, dimension,
                         si_half[0].close('line')
                         si_surf = g_i.surface(si_half[0])
                         si_volume = g_i.extrude(si_surf,0,0,
-                                                si_params['UK']-si_params['OK'])
+                                                (si_params['UK'] -
+                                                 si_params['OK'])
+                                                )
                         si_volume[-1].Material = si_soil
                         g_i.delete(si_surf)
                         g_i.delete(si_half[0])
                         # Base interface
-                        si_base_radius = si_params['radius'] + si_base_radius_ext
+                        si_base_radius = (si_params['radius'] +
+                                          si_base_radius_ext)
                         checks = [("maxx", si_pos_xi, ">"),
                                   ("minx", si_pos_xi, "<"),
                                   ("miny", si_pos_yi, "<"),
@@ -1164,8 +1170,8 @@ def fct_modelPhaser(g_i, dimension, path,
     g_i.setcurrentphase(II)
     if differentDeformation:
         if dimension == 'unitcell2':
-            g_i.set(g_i.Deformations.BoundaryXMin, II, "Horizontally fixed") # left
-            g_i.set(g_i.Deformations.BoundaryXMax, II, "Horizontally fixed") # right
+            g_i.set(g_i.Deformations.BoundaryXMin, II, "Horizontally fixed")
+            g_i.set(g_i.Deformations.BoundaryXMax, II, "Horizontally fixed")
             g_i.set(g_i.Deformations.BoundaryYMin, II, "Fully fixed") # bottom
             g_i.set(g_i.Deformations.BoundaryYMax, II, "Free") # top
         elif dimension == 'unitcell3':
@@ -1301,7 +1307,7 @@ def fct_modelPhaser(g_i, dimension, path,
             if ltp_params['height'] > 0:
                 g_i.activate(slab_int[0],        SB)
                 # slab_int shpuld not be on top of the si_tops
-        # g_i.setmaterial(ltp_elem[0],             SB, ltp_soil) # stabilisation
+        # g_i.setmaterial(ltp_elem[0],           SB, ltp_soil) # stabilisation
         SB.Deform.ResetDisplacementsToZero = True
         SB.Deform.ResetSmallStrain         = False
         SB.Identification.set(f'Phase {phaseCounter}: Foundation Slab')

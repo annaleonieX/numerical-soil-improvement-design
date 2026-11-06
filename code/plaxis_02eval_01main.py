@@ -1242,8 +1242,6 @@ def fct_eval2D(path, model, dimension,
                 typ = 'shaft'
                 subfolder = f'results_{typ}'
                 t0 = time.time()
-                # Get stresses along the shaft due to force reduction
-                # si_weight from gammaUnsat or gammasat
                 F_pile = math.pi * si_radius**2 * si_height * si_weight
                 F_descr.append('due to stresses from var=0 '
                                'above and below pile (force difference)')
@@ -1253,7 +1251,6 @@ def fct_eval2D(path, model, dimension,
                 variant_Fshaft_p = [100] + variant_Fshaft_p
                 var_i = 0
                 if var_i in variant_Fshaft_p: #0
-                    # Get interface stresses along the shaft for each phase
                     F_descr.append('due to interface stresses s_1 with limits '
                                    '(trapezoidal)')
                     t0 = time.time()
@@ -1289,10 +1286,9 @@ def fct_eval2D(path, model, dimension,
                     results_cs_full.sort_values(by='y',
                                                 inplace=True,
                                                 ignore_index=True)
-                    tc = time.time() - t0 # extraction time of the different values
+                    tc = time.time() - t0 # extraction time of the diff values
                     var_i += 1
                     if var_i in variant_Fshaft_p: #1
-                        # Get crosssection stresses along the shaft for each phase (xy)
                         F_descr.append('due to crosssection stresses s_xy '
                                        '(trapezoidal)')
                         t0 = time.time()
@@ -1312,7 +1308,6 @@ def fct_eval2D(path, model, dimension,
                         F_times.append(time.time() - t0 + tc)
                     var_i += 1
                     if var_i in variant_Fshaft_p: #2
-                        # Get crosssection stresses along the shaft for each phase (xx)
                         if testingDeep:
                             F_descr.append('due to crosssection stresses s_xx '
                                            '(trapezoidal)')
@@ -1334,7 +1329,6 @@ def fct_eval2D(path, model, dimension,
                         else: variant_Fshaft_p.remove(var_i)
                     var_i += 1
                     if var_i in variant_Fshaft_p: #3
-                        # Get crosssection stresses along the shaft for each phase (yy)
                         if testingDeep:
                             F_descr.append('due to crosssection stresses s_yy '
                                            '(trapezoidal)')
@@ -1503,9 +1497,6 @@ def fct_eval2D(path, model, dimension,
                 try:
                     mat_name = plate.Material.value.Identification.value
                     if 'DummySlab' in mat_name:
-                        # if testing:
-                        #     print(f'{plate.Name.value}: {mat_name} '
-                        #           f'for phase {phase}')
                         target_plate = plate
                         break
                 except Exception as e:
@@ -1608,7 +1599,8 @@ def fct_eval2D(path, model, dimension,
                                    [F_base_0+F_shaft_0, -F_pile], [0,0],
                                    ['due to first F_base+F_shaft value',
                                     'due to F_pile calculation'],
-                                   accuracy=accuracy)
+                                   accuracy=accuracy
+                                   )
             else: # reference phase was already calculated
                 ref_row = Fsu_phases_df[Fsu_phases_df['Phase'] == phaseStart]
                 if ref_row.empty:
@@ -1648,7 +1640,8 @@ def fct_eval2D(path, model, dimension,
                                           F_shaft, F_shaft_0,
                                           s_elem,  s_elem_0,
                                           s_soil,  s_soil_0,
-                                          s_init,  s_init_0)
+                                          s_init,  s_init_0
+                                          )
         g_o.close()
 
     return g_o
@@ -1705,7 +1698,8 @@ def fct_eval3D(path, model, dimension,
     if not slab_elems_vol:
         raise ValueError('No slab volumes found.')
     slab_bottom = min(s['baseZ']  for s in slab_elems_vol)
-    slab_weight = sum(s['weight'] for s in slab_elems_vol) / len(slab_elems_vol)
+    slab_weight = (sum(s['weight'] for s in slab_elems_vol) /
+                   len(slab_elems_vol))
     # define base point
     countsX = {}
     for s in slab_elems_vol:
@@ -1758,7 +1752,7 @@ def fct_eval3D(path, model, dimension,
             num_si_x = len(unique_x)
             num_si_y = len(unique_y)
         elif dimension in ['quarter3']:
-            # Slab width is unknown because no explicit geometry info is available.
+            # Slab width is unknown -> no explicit geometry info is available.
             # And the model type (full / half / quarter pile representation)
             # cannot be derived directly from geometry.
             # As a workaround, SI_PARAMS (numx, numy) 
@@ -1785,7 +1779,8 @@ def fct_eval3D(path, model, dimension,
         dis_x = np.median(dx_list) if dx_list else 0
         dis_y = np.median(dy_list) if dy_list else 0
         if (num_si_x <= 1 or num_si_y <= 1):
-            if dimension not in ['quarter3']: # for full3
+            if dimension not in ['quarter3']:
+                # for full3
                 # Slab width is unknown because no explicit info is available
                 # si_params already known for quarter3
                 si_params = fct_getInputparams(path, 'SI_PARAMS')
@@ -1834,10 +1829,6 @@ def fct_eval3D(path, model, dimension,
         # searched soil improvement volume
         distances_si = [np.sqrt((vx - sx)**2 + (vy - sy)**2)
                         for vx, vy, _, _ in si_elems_all]
-        # print('si_elems_all are:')
-        # for si_elem_all in si_elems_all:
-        #     print(si_elem_all[-1].Name.value) # vol
-        si_radii.append(min(distances_si)) # due to shift during modelling
         best_index = np.argmin(distances_si)
         si_elems_vol.append(si_elems_all[best_index][-1]) # vol
 
@@ -1846,15 +1837,7 @@ def fct_eval3D(path, model, dimension,
         si_bases_all = [(ix, iy, iz, surf)
                          for ix, iy, iz, surf in surf_list
                          if iz == si_baseValue]
-        # print('si_bases_all are:')
-        # for si_base_all in si_bases_all:
-        #     print(si_base_all[-1].Name.value) # surf
         if si_bases_all:
-            # for si_base_all in si_bases_all:
-            #     print( f'{si_base_all[3].Name.value}: '
-            #           f'[{si_base_all[0]}, '
-            #            f'{si_base_all[1]}, '
-            #            f'{si_base_all[2]}]')
             distances_base = [np.sqrt((ix - sx)**2 + (iy - sy)**2)
                               for ix, iy, _, _ in si_bases_all]
             best_index = np.argmin(distances_base)
@@ -1878,9 +1861,6 @@ def fct_eval3D(path, model, dimension,
     si_top_depth  = np.mean(si_tops_depth)
     si_base_depth = si_baseValue
     si_height     = si_top_depth - si_base_depth
-    # print(si_elems_vol)
-    # print(si_shafts_surf)
-    # print(si_bases_surf)
     print(f'Boundaries of the SI is (top={si_top_depth}, '
           f'bottom={si_base_depth}).\n')
 

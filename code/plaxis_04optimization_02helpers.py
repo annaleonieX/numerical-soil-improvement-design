@@ -9,9 +9,11 @@ Created on Sun Jun 14 07:26:46 2026
 @author: annaleoniesalzmann
 """
 
-# =============================================================================
+###############################################################################
+###############################################################################
 # Imports
-# =============================================================================
+###############################################################################
+###############################################################################
 
 import re
 import ast
@@ -28,7 +30,7 @@ from plaxis_00calling_02helpers import (fct_setPlotstyle,
 
 ###############################################################################
 ###############################################################################
-#################################### DATA #####################################
+# DATA
 ###############################################################################
 ###############################################################################
 
@@ -274,7 +276,7 @@ def get_buildingData(typ): # 'limits', 'costs', 'params'
 
 ###############################################################################
 ###############################################################################
-#################################### COSTS ####################################
+# COSTS
 ###############################################################################
 ###############################################################################
 
@@ -380,33 +382,9 @@ def fct_calculateCost(filepath, METHOD_COSTS):
     results = calculate_project_costs(model_data, METHOD_COSTS)
     return results["total_cost_eur"], results
 
-# if __name__ == "__main__":
-#     METHOD_COSTS = {"concrete":   {"cost_eur_m3": 180.0, "co2_kg_m3": 300.0,},
-#                   "ltp":        {"cost_eur_m3": 65.0,  "co2_kg_m3": 30.0,},
-#                   "excavation": {"cost_eur_m3": 15.0,  "co2_kg_m3": 3.0,},
-#                   "improvement": {"dsm": {"cost_eur_m3": 140.0,
-#                                           "co2_kg_m3": 80.0},
-#                                   "cmc": {"cost_eur_m3": 180.0,
-#                                           "co2_kg_m3": 120.0},
-#                                   "vr": {"cost_eur_m3": 90.0,
-#                                          "co2_kg_m3": 25.0},
-#                                   "ri": {"cost_eur_m3": 220.0,
-#                                          "co2_kg_m3": 150.0},
-#                                   "lcc": {"cost_eur_m3": 130.0,
-#                                           "co2_kg_m3": 70.0}
-#                                   },
-#                   "co2": {"cost_eur_ton": 100}
-#                   }
-#     filepath = r'C:\Users\annal\Documents\Studium\Salzmann_Masterarbeit\Optimization - 2026-06-11 - Test SRF\mesh_coarse_unitcell2'
-#     _, results = fct_calculateCost(filepath, METHOD_COSTS)
-#     print("\nPROJECT COST SUMMARY")
-#     print("=" * 60)
-#     for key, value in results.items():
-#         print(f"{key:25s}: {value:12.2f}")
-
 ###############################################################################
 ###############################################################################
-#################################### PLOTS ####################################
+# PLOTS
 ###############################################################################
 ###############################################################################
 
@@ -417,19 +395,7 @@ def plot_parameterVariation(path):
     # g_color    = colors[1]   # turquoise
     # best_color = colors[4]   # red
     # path_color = colors[5]   # grey
-    """
-    Creates 3D scatter plots showing the parameter variation.
-    Plot 1:
-        x = si_R
-        y = si_L
-        z = cost
-        color = cost
-    Plot 2:
-        x = si_R
-        y = si_L
-        z = g1 + g2 + g3
-        color = g1 + g2 + g3
-    """
+    # Creates 3D scatter plots showing the parameter variation.
     history = pd.read_csv(os.path.join(path,
                                        "optimization_history.csv"),
                           sep=';')
@@ -671,33 +637,49 @@ def format_valueUnit(prop, v,
     return v, unit_map.get(prop, "")
 
 # Display labels only: input keys and calculation data stay unchanged.
-METHOD_ABBREVIATIONS = {
-    "SSI": "SSI", "PVD": "PVD", "DC": "DC", "RIC": "RIC",
-    "WIP": "WIP", "BD": "BD", "CMC": "CMC", "MRM": "MRM",
-    "VC": "CVC", "CVC": "CVC", "RI": "RI", "DSM": "DSM",
-    "RAP": "RAP", "JG": "JG", "CEM": "CEM", "CG": "CG",
-    "LMG": "LMG", "AGF": "AGF", "VR": "VR", "VSC": "VSC",
-    "CFA": "CFA", "RP": "ReP", "REP": "ReP",
-    "DP": "DiP", "DIP": "DiP", "KPP": "KPP", "ASIRI": "ASIRI",
-}
-
-PROPERTY_LABELS = {
-    "diameter": "Diameter",
-    "spacing": "Spacing",
-    "ltp": "LTP thickness",
-    "stiffness": r"$E_{\mathrm{SI}}$",
-    "Eref": r"$E_{\mathrm{SI}}$",
-    "nu": r"$\nu$",
-    "gamma": r"$\gamma$",
-    "Rinter": r"$R_{\mathrm{inter}}$",
-    "cost_eur_m3": "costs",
-    "co2_cost_eur": "costs",
-    "co2_kg_m3": r"$\mathrm{CO}_{2}$",
-}
+METHOD_ABBREVIATIONS = {"SSI":  "SSI",
+                        "PVD":  "PVD",
+                        "DC":   "DC",
+                        "RIC":  "RIC",
+                        "WIP":  "WIP",
+                        "BD":   "BD",
+                        "CMC":  "CMC",
+                        "MRM":  "MRM",
+                        "VC":   "CVC",
+                        "CVC":  "CVC",
+                        "RI":   "RI",
+                        "DSM":  "DSM",
+                        "RAP":  "RAP",
+                        "JG":   "JG",
+                        "CEM":  "CEM",
+                        "CG":   "CG",
+                        "LMG":  "LMG",
+                        "AGF":  "AGF",
+                        "VR":   "VR",
+                        "VSC":  "VSC",
+                        "CFA":  "CFA",
+                        "RP":       "ReP",
+                        "REP":      "ReP",
+                        "DP":       "DiP",
+                        "DIP":      "DiP",
+                        "KPP":      "KPP",
+                        "ASIRI":    "ASIRI",
+                        }
+PROPERTY_LABELS = {"diameter":      "Diameter",
+                   "spacing":       "Spacing",
+                   "ltp":           "LTP thickness",
+                   "stiffness":     r"$E_{\mathrm{SI}}$",
+                   "Eref":          r"$E_{\mathrm{SI}}$",
+                   "nu":            r"$\nu$",
+                   "gamma":         r"$\gamma$",
+                   "Rinter":        r"$R_{\mathrm{inter}}$",
+                   "cost_eur_m3":   "costs",
+                   "co2_cost_eur":  "costs",
+                   "co2_kg_m3":     r"$\mathrm{CO}_{2}$",
+                   }
 
 # co2_cost_eur is a total monetary amount, not a cost per volume.
 unit_map["co2_cost_eur"] = "€"
-
 
 def format_methodLabel(method):
     """Display only the thesis abbreviation, including for study variants."""
@@ -721,7 +703,6 @@ def plot_methodRanges(data,
     if len(properties) == 1: axes = [axes]
     method_names = {m: format_methodLabel(m) for m in methods}
     norms = {}
-
     for ax, prop in zip(axes, properties):
         unit = unit_map.get(prop, "")
         label = PROPERTY_LABELS.get(prop, prop.replace("_", " "))
@@ -774,22 +755,10 @@ def plot_methodRanges(data,
             ax.plot([x2, x2], [y - 0.15, y + 0.15], color='k')
         if use_log and all(v > 0 for v in values): ax.set_xscale("log")
         ax.grid(alpha=0.3)
-
     # y labels with thesis abbreviations
     axes[0].set_yticks(range(len(methods)))
     axes[0].set_yticklabels([method_names[m] for m in methods])
-    # colorbar per property
-    # for ax, prop in zip(axes, properties):
-    #     norm = norms.get(prop, None)
-    #     if norm is None:
-    #         continue
-    #     sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    #     sm.set_array([])
-    #     cbar = fig.colorbar(sm, ax=ax, orientation="horizontal",
-    #                         fraction=0.08, pad=0.15)
-    #     cbar.set_label(f"{prop}")
-    #     cbar.outline.set_visible(False)
-
+    # plot
     plt.tight_layout()
     if savePath is None:
         plt.show()
