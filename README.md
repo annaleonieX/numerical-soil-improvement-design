@@ -89,7 +89,7 @@ The model-generation, evaluation and shared calling modules must also be provide
 
 The framework and results presented in this repository are based on the following master's thesis:
 *Salzmann, A. (2026). Numerical Optimisation of Geotechnical Structures. Master's thesis, Graz University of Technology (TU Graz)*.
-Available at: [TU Graz Repository](https://online.tugraz.at/tug_online/wbAbs.showThesis?pThesisNr=100281&pOrgNr=953)..
+Available at: [TU Graz Repository](https://online.tugraz.at/tug_online/wbAbs.showThesis?pThesisNr=100281&pOrgNr=953).
 
 Please cite the thesis when using the framework, code or results presented in this repository.
 
